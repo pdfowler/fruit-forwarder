@@ -37,3 +37,4 @@ jobs:
             --entitlements deployment/reminders.entitlements \
             build/icloud-reminders-eventkit
           codesign --verify --strict build/icloud-reminders-eventkit
+      - run: python3 scripts/test-native-calendar.py

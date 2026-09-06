@@ -63,16 +63,39 @@ private struct WireList: Codable {
     }
 }
 
+private struct WireEvent: Codable {
+    let uid: String
+    let summary: String
+    let start: String
+    let end: String
+    let all_day: Bool
+    let time_zone: String
+    let description: String
+    let location: String
+}
+
+private struct WireCalendar: Codable {
+    let id: String
+    let name: String
+    let source: String
+    let events: [WireEvent]
+}
+
 private struct Request: Codable {
     let action: String
     var listIDs: [String] = []
     var listID: String = ""
     var item: WireItem = WireItem()
+    var calendarIDs: [String] = []
+    var start: String = ""
+    var end: String = ""
 
     enum CodingKeys: String, CodingKey {
         case action, item
         case listIDs = "list_ids"
         case listID = "list_id"
+        case calendarIDs = "calendar_ids"
+        case start, end
     }
 
     init(from decoder: Decoder) throws {
@@ -81,12 +104,16 @@ private struct Request: Codable {
         listIDs = try values.decodeIfPresent([String].self, forKey: .listIDs) ?? []
         listID = try values.decodeIfPresent(String.self, forKey: .listID) ?? ""
         item = try values.decodeIfPresent(WireItem.self, forKey: .item) ?? WireItem()
+        calendarIDs = try values.decodeIfPresent([String].self, forKey: .calendarIDs) ?? []
+        start = try values.decodeIfPresent(String.self, forKey: .start) ?? ""
+        end = try values.decodeIfPresent(String.self, forKey: .end) ?? ""
     }
 }
 
 private struct Response: Codable {
     var lists: [WireList]?
     var item: WireItem?
+    var calendars: [WireCalendar]? = nil
 }
 
 private enum HelperError: LocalizedError {
@@ -153,6 +180,75 @@ private final class EventKitService {
                 )
             }
             .sorted { ($0.source, $0.name, $0.id) < ($1.source, $1.name, $1.id) }
+    }
+
+    func requestCalendarAccess() async throws {
+        let status = EKEventStore.authorizationStatus(for: .event)
+        if status == .fullAccess { return }
+        if status == .denied || status == .restricted {
+            throw HelperError.invalidRequest("Calendar access denied; check macOS Calendar permissions")
+        }
+        guard try await store.requestFullAccessToEvents() else {
+            throw HelperError.invalidRequest("Calendar access was not granted")
+        }
+    }
+
+    func eventCalendars() -> [WireCalendar] {
+        store.calendars(for: .event).map {
+            WireCalendar(id: $0.calendarIdentifier, name: $0.title,
+                         source: $0.source.title, events: [])
+        }.sorted { ($0.source, $0.name, $0.id) < ($1.source, $1.name, $1.id) }
+    }
+
+    static func eventWindow(_ request: Request) throws -> (Date, Date) {
+        let formatter = ISO8601DateFormatter()
+        guard let start = formatter.date(from: request.start),
+              let end = formatter.date(from: request.end), end > start,
+              end.timeIntervalSince(start) <= 366 * 24 * 60 * 60 else {
+            throw HelperError.invalidRequest("calendar window must be RFC3339, positive, and at most 366 days")
+        }
+        guard request.calendarIDs.count <= 100,
+              Set(request.calendarIDs).count == request.calendarIDs.count,
+              request.calendarIDs.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+            throw HelperError.invalidRequest("calendar_ids must contain at most 100 unique non-empty IDs")
+        }
+        return (start, end)
+    }
+
+    func eventSnapshot(_ request: Request) throws -> [WireCalendar] {
+        let (start, end) = try Self.eventWindow(request)
+        // An empty scope never means all calendars.
+        if request.calendarIDs.isEmpty { return [] }
+        let calendars = try request.calendarIDs.map { id in
+            guard let calendar = store.calendar(withIdentifier: id),
+                  calendar.allowedEntityTypes.contains(.event) else {
+                throw HelperError.invalidRequest("Configured event calendar is unavailable")
+            }
+            return calendar
+        }
+        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: calendars)
+        let events = store.events(matching: predicate).filter { $0.endDate > start && $0.startDate < end }
+        guard events.count <= 10000 else {
+            throw HelperError.invalidRequest("Too many calendar events; use a smaller time window")
+        }
+        return calendars.map { calendar in
+            let items = events.filter { $0.calendar.calendarIdentifier == calendar.calendarIdentifier }.map { event in
+                let formatter = DateFormatter()
+                formatter.calendar = Calendar(identifier: .gregorian)
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.timeZone = event.timeZone ?? TimeZone.current
+                formatter.dateFormat = "yyyy-MM-dd"
+                return WireEvent(
+                    uid: event.calendarItemIdentifier + "/" + iso8601.string(from: event.startDate),
+                    summary: event.title ?? "",
+                    start: event.isAllDay ? formatter.string(from: event.startDate) : iso8601.string(from: event.startDate),
+                    end: event.isAllDay ? formatter.string(from: event.endDate) : iso8601.string(from: event.endDate),
+                    all_day: event.isAllDay, time_zone: (event.timeZone ?? TimeZone.current).identifier,
+                    description: event.notes ?? "", location: event.location ?? "")
+            }.sorted { ($0.start, $0.uid) < ($1.start, $1.uid) }
+            return WireCalendar(id: calendar.calendarIdentifier, name: calendar.title,
+                                source: calendar.source.title, events: items)
+        }
     }
 
     func snapshot(listIDs: [String]) async throws -> [WireList] {
@@ -295,10 +391,23 @@ private struct Main {
             trace("request-decoded")
             let service = EventKitService()
             trace("event-store-created")
-            try await service.requestAccess()
+            if request.action == "calendar_snapshot" {
+                _ = try EventKitService.eventWindow(request)
+            }
+            if request.action == "calendars" || request.action == "calendar_snapshot" {
+                if request.action == "calendars" || !request.calendarIDs.isEmpty {
+                    try await service.requestCalendarAccess()
+                }
+            } else {
+                try await service.requestAccess()
+            }
             trace("access-granted")
             let response: Response
             switch request.action {
+            case "calendars":
+                response = Response(calendars: service.eventCalendars())
+            case "calendar_snapshot":
+                response = Response(calendars: try service.eventSnapshot(request))
             case "lists":
                 response = Response(lists: service.lists(), item: nil)
             case "snapshot":

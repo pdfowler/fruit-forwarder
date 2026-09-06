@@ -27,6 +27,9 @@ Before a broadly recommended release:
   signed or packaged releases. Manual component copying is the current HA path.
 - Extend the EventKit adapter to calendars with a bounded time window, explicit
   calendar allowlists, HA calendar entities, and corresponding MCP tools.
+  Native discovery and bounded reads are implemented with separate Calendar
+  permission and no-access boundary tests. Go wiring, HA entities, MCP tools,
+  and real recurrence/all-day validation remain open. See docs/calendar-protocol.md.
 - Prepare release notes and a public repository with CI results and a private
   security-reporting channel.
 
