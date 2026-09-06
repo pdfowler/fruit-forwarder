@@ -1,0 +1,8 @@
+/build/
+__pycache__/
+*.pyc
+config.local.json
+.DS_Store
+*.log
+state.json
+config.json

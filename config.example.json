@@ -1,0 +1,9 @@
+{
+  "bridge_id": "mac",
+  "home_assistant_url": "https://home-assistant.example.invalid",
+  "poll_interval": "30s",
+  "completed_retention": "720h",
+  "keychain_service": "com.example.icloud-reminders-bridge",
+  "keychain_account": "mac",
+  "lists": []
+}

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.example.icloud-reminders-bridge</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/launchctl</string>
+    <string>asuser</string>
+    <string>@@UID@@</string>
+    <string>@@BINARY@@</string>
+    <string>serve</string>
+    <string>--config</string>
+    <string>@@CONFIG@@</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>@@HOME@@</string>
+    <key>USER</key>
+    <string>@@USER@@</string>
+    <key>TMPDIR</key>
+    <string>@@TMPDIR@@</string>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>@@LOG_DIR@@/icloud-reminders-bridge.log</string>
+  <key>StandardErrorPath</key>
+  <string>@@LOG_DIR@@/icloud-reminders-bridge.log</string>
+  <key>ThrottleInterval</key>
+  <integer>15</integer>
+</dict>
+</plist>

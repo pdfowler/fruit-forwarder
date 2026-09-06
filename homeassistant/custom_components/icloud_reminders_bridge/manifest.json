@@ -1,0 +1,11 @@
+{
+  "domain": "icloud_reminders_bridge",
+  "name": "iCloud Reminders Bridge",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/pdfowler/icloud-reminders-bridge",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "requirements": [],
+  "version": "0.1.0"
+}

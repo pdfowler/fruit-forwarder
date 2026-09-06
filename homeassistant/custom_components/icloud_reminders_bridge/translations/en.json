@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect an iCloud Reminders bridge",
+        "description": "Run `icloud-reminders-bridge pair` on the macOS bridge, then paste the copied token and the exact list IDs from `icloud-reminders-bridge discover`.",
+        "data": {
+          "name": "Name",
+          "bridge_id": "Bridge identifier",
+          "pairing_token": "Pairing token",
+          "allowed_list_ids": "Allowed EventKit list IDs (one per line)"
+        }
+      }
+    },
+    "error": {
+      "invalid_token": "The pairing token is not a valid 256-bit bridge token.",
+      "no_lists": "Enter at least one exact EventKit reminder list ID."
+    },
+    "abort": {
+      "already_configured": "This bridge is already configured."
+    }
+  }
+}

@@ -1,0 +1,82 @@
+# iCloud Reminders Bridge
+
+A local macOS bridge between Apple Reminders and Home Assistant. It uses Apple's
+EventKit API for reads and writes, exposes a small stdio MCP server, and pushes
+allowlisted reminder lists to Home Assistant todo entities.
+
+## Security boundary
+
+- Apple credentials never leave macOS. EventKit uses the Mac user's signed-in accounts
+  and macOS Reminders permission.
+- The bridge makes outbound HTTPS requests to one Home Assistant webhook. It does not
+  hold a Home Assistant long-lived access token.
+- The webhook uses a random 256-bit path token and is registered `local_only`.
+- Both HA and the bridge enforce a reminder-list allowlist. The bridge uses exact EventKit
+  list IDs for reads and writes.
+- HA and MCP offer create, edit, complete, and reopen. Delete and list-management
+  operations are intentionally absent.
+- The webhook token is stored in the macOS login Keychain. It is not in the
+  LaunchAgent environment, repository, or JSON configuration.
+- Logs contain counts, command IDs, and errors—not reminder titles or notes.
+
+## Components
+
+- `eventkit-helper`: a small native Swift helper using only Apple's public
+  EventKit API.
+- `cmd/icloud-reminders-bridge`: discovery, pairing, daemon, one-shot sync, and
+  stdio MCP entrypoint. It invokes the native helper directly with a 30-second
+  timeout; macOS enforces Reminders access for the responsible application.
+- `homeassistant/custom_components/icloud_reminders_bridge`: push-driven HA todo
+  entities and the durable command queue.
+- `deployment`: a user LaunchAgent for the Mac.
+
+## Quick start
+
+1. Build and install on a Mac signed in to the iCloud account that owns the lists:
+
+   ```sh
+   ./scripts/install-macos.sh --install-only
+   ```
+
+2. Grant Reminders access when macOS prompts. Discover exact list IDs:
+
+   ```sh
+   ~/Library/Application\ Support/icloud-reminders-bridge/bin/icloud-reminders-bridge discover
+   ```
+
+3. Edit `~/.config/icloud-reminders-bridge/config.json`, adding only the lists
+   you want to expose. Run `pair` to create a one-time token and configure the
+   Home Assistant custom integration with that token and the same list IDs.
+
+4. Start the per-user LaunchAgent:
+
+   ```sh
+   ./scripts/install-macos.sh
+   ```
+
+The pairing token is stored in the macOS login Keychain. Do not commit the
+runtime config, state file, logs, or token.
+
+The example uses `com.example.icloud-reminders-bridge` as a neutral reverse-DNS
+service identifier. Change it consistently in the config and deployment
+template if you publish your own branded build.
+
+## Configuration
+
+`completed_retention` controls how long completed reminders remain in the
+bridge snapshot. The default is 30 days (`720h`); this prevents an old iCloud
+history from filling Home Assistant while preserving recent completed items.
+
+The bridge intentionally does not expose delete or list-management operations.
+Review the allowlist and the Home Assistant webhook path before placing the
+service on a network shared with untrusted clients.
+
+## Development
+
+```sh
+go test -race ./...
+go vet ./...
+```
+
+The native helper requires macOS and the EventKit permission prompt. See
+`CONTRIBUTING.md` for local build details and `SECURITY.md` for disclosure guidance.
