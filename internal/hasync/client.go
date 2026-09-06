@@ -102,7 +102,26 @@ func (c *Client) SyncOnce(ctx context.Context) (int, error) {
 }
 
 func (c *Client) postSnapshot(ctx context.Context, lists []model.List) (*model.SyncResponse, error) {
+	calendars := make([]model.Calendar, 0, len(c.cfg.Calendars))
+	if len(c.cfg.Calendars) > 0 {
+		reader, ok := c.store.(interface {
+			CalendarEvents(context.Context, string, string, string) ([]model.Event, error)
+		})
+		if !ok {
+			return nil, errors.New("calendar reader is unavailable")
+		}
+		now := time.Now().UTC()
+		start, end := now.Add(-30*24*time.Hour).Format(time.RFC3339), now.Add(90*24*time.Hour).Format(time.RFC3339)
+		for _, calendar := range c.cfg.Calendars {
+			events, err := reader.CalendarEvents(ctx, calendar.ID, start, end)
+			if err != nil {
+				return nil, fmt.Errorf("read configured calendar: %w", err)
+			}
+			calendars = append(calendars, model.Calendar{ID: calendar.ID, Name: calendar.Name, Events: events, WindowStart: start, WindowEnd: end})
+		}
+	}
 	payload := model.Snapshot{
+		Calendars:         calendars,
 		Version:           model.ProtocolVersion,
 		BridgeID:          c.cfg.BridgeID,
 		SentAt:            time.Now().UTC(),

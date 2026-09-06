@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/pdfowler/icloud-reminders-bridge/internal/config"
 	"github.com/pdfowler/icloud-reminders-bridge/internal/model"
@@ -18,6 +19,51 @@ import (
 )
 
 type failingTransport struct{}
+
+type calendarSyncStore struct {
+	fakeReminderStore
+	called bool
+}
+
+func (s *calendarSyncStore) CalendarEvents(_ context.Context, id, start, end string) ([]model.Event, error) {
+	s.called = true
+	if id != "events" {
+		return nil, errors.New("wrong scope")
+	}
+	a, err := time.Parse(time.RFC3339, start)
+	if err != nil {
+		return nil, err
+	}
+	b, err := time.Parse(time.RFC3339, end)
+	if err != nil || b.Sub(a) != 120*24*time.Hour {
+		return nil, errors.New("wrong window")
+	}
+	return []model.Event{}, nil
+}
+
+func TestCalendarSnapshotSync(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload model.Snapshot
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Error(err)
+		}
+		if len(payload.Calendars) != 1 || payload.Calendars[0].ID != "events" || payload.Calendars[0].WindowStart == "" || payload.Calendars[0].WindowEnd == "" {
+			t.Errorf("invalid calendar snapshot: %+v", payload.Calendars)
+		}
+		_ = json.NewEncoder(w).Encode(model.SyncResponse{Version: model.ProtocolVersion})
+	}))
+	defer server.Close()
+	store := &calendarSyncStore{fakeReminderStore: fakeReminderStore{items: []model.List{}}}
+	cfg := &config.Config{BridgeID: "mac", HomeAssistantURL: server.URL, Calendars: []config.List{{ID: "events", Name: "Events"}}}
+	client := New(cfg, "synthetic", store, &state.State{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	client.httpClient = server.Client()
+	if _, err := client.SyncOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if !store.called {
+		t.Fatal("calendar adapter not called")
+	}
+}
 
 func (failingTransport) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, errors.New("connection unavailable")

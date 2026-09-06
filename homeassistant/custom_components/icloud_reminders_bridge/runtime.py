@@ -15,12 +15,14 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 
 from .const import (
+    CONF_ALLOWED_CALENDAR_IDS,
     CONF_ALLOWED_LIST_IDS,
     CONF_BRIDGE_ID,
     MAX_ITEMS,
     MAX_LISTS,
     PROTOCOL_VERSION,
 )
+from .calendar_data import validate_calendars
 
 UpdateCallback = Callable[[], None]
 
@@ -41,6 +43,7 @@ class BridgeRuntime:
         self._lock = asyncio.Lock()
         self._listeners: list[UpdateCallback] = []
         self.lists: dict[str, dict[str, Any]] = {}
+        self.calendars: dict[str, dict[str, Any]] = {}
         self.commands: list[dict[str, Any]] = []
         self.last_sync: str | None = None
 
@@ -48,6 +51,11 @@ class BridgeRuntime:
         """Restore the last confirmed snapshot and pending commands."""
         stored = await self._store.async_load() or {}
         allowed_ids = set(self.entry.data[CONF_ALLOWED_LIST_IDS])
+        calendar_ids = set(self.entry.data.get(CONF_ALLOWED_CALENDAR_IDS, []))
+        self.calendars = validate_calendars([
+            c for c in stored.get("calendars", [])
+            if isinstance(c, dict) and c.get("id") in calendar_ids
+        ], calendar_ids)
         self.lists = {
             item["id"]: item
             for item in stored.get("lists", [])
@@ -60,7 +68,8 @@ class BridgeRuntime:
         ]
         self.last_sync = stored.get("last_sync")
         if (len(self.lists) != len(stored.get("lists", []))
-                or len(self.commands) != len(stored.get("commands", []))):
+                or len(self.commands) != len(stored.get("commands", []))
+                or len(self.calendars) != len(stored.get("calendars", []))):
             # Persist revocation so re-adding a list cannot resurrect stale edits.
             await self._async_save()
 
@@ -81,7 +90,13 @@ class BridgeRuntime:
     ) -> dict[str, Any]:
         """Validate and store a bridge snapshot, then return queued edits."""
         lists, applied_ids = self._validate_snapshot(payload)
+        try:
+            calendars = validate_calendars(payload.get("calendars", []),
+                set(self.entry.data.get(CONF_ALLOWED_CALENDAR_IDS, [])))
+        except ValueError as err:
+            raise ProtocolError(str(err)) from err
         async with self._transaction():
+            self.calendars = calendars
             allowed_ids = set(self.entry.data[CONF_ALLOWED_LIST_IDS])
             self.commands = [
                 command for command in self.commands
@@ -212,18 +227,19 @@ class BridgeRuntime:
     async def _transaction(self):
         """Publish mutations only after storage succeeds; rollback failed saves."""
         async with self._lock:
-            previous = deepcopy((self.lists, self.commands, self.last_sync))
+            previous = deepcopy((self.lists, self.commands, self.last_sync, self.calendars))
             try:
                 yield
                 await self._async_save()
             except BaseException:
-                self.lists, self.commands, self.last_sync = previous
+                self.lists, self.commands, self.last_sync, self.calendars = previous
                 raise
 
     async def _async_save(self) -> None:
         await self._store.async_save(
             {
                 "lists": list(self.lists.values()),
+                "calendars": list(self.calendars.values()),
                 "commands": self.commands,
                 "last_sync": self.last_sync,
             }

@@ -4,9 +4,8 @@ A local macOS bridge between Apple Reminders and Home Assistant. It uses Apple's
 EventKit API for reads and writes, exposes a small stdio MCP server, and pushes
 allowlisted reminder lists to Home Assistant todo entities.
 
-**Early release.** Reminders support HA and MCP; read-only calendars are now
-available through MCP (see [calendar setup](docs/calendar-protocol.md)).
-HA calendar entities are still in development. Background
+**Early release.** Reminders and read-only calendars support HA and local MCP
+(see [calendar setup](docs/calendar-protocol.md)). Background
 EventKit permission and reboot recovery still need validation; see the
 [release roadmap](ROADMAP.md). Start with the complete [setup guide](docs/setup.md)
 for Home Assistant and local MCP configuration.

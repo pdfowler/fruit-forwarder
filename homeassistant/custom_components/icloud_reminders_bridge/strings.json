@@ -8,13 +8,14 @@
           "name": "Name",
           "bridge_id": "Bridge identifier",
           "pairing_token": "Pairing token",
-          "allowed_list_ids": "Allowed EventKit list IDs (one per line)"
+          "allowed_list_ids": "Allowed EventKit reminder list IDs (one per line)",
+          "allowed_calendar_ids": "Allowed EventKit calendar IDs (optional, one per line)"
         }
       }
     },
     "error": {
       "invalid_token": "The pairing token is not a valid 256-bit bridge token.",
-      "no_lists": "Enter at least one exact EventKit reminder list ID."
+      "no_lists": "Enter at least one exact EventKit reminder list or calendar ID."
     },
     "abort": {
       "already_configured": "This bridge is already configured."

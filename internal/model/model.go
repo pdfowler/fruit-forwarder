@@ -16,10 +16,12 @@ type Event struct {
 }
 
 type Calendar struct {
-	ID     string  `json:"id"`
-	Name   string  `json:"name"`
-	Source string  `json:"source,omitempty"`
-	Events []Event `json:"events"`
+	WindowStart string  `json:"window_start,omitempty"`
+	WindowEnd   string  `json:"window_end,omitempty"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Source      string  `json:"source,omitempty"`
+	Events      []Event `json:"events"`
 }
 
 type Item struct {
@@ -41,11 +43,12 @@ type List struct {
 }
 
 type Snapshot struct {
-	Version           int       `json:"version"`
-	BridgeID          string    `json:"bridge_id"`
-	SentAt            time.Time `json:"sent_at"`
-	Lists             []List    `json:"lists"`
-	AppliedCommandIDs []string  `json:"applied_command_ids,omitempty"`
+	Calendars         []Calendar `json:"calendars,omitempty"`
+	Version           int        `json:"version"`
+	BridgeID          string     `json:"bridge_id"`
+	SentAt            time.Time  `json:"sent_at"`
+	Lists             []List     `json:"lists"`
+	AppliedCommandIDs []string   `json:"applied_command_ids,omitempty"`
 }
 
 type Command struct {

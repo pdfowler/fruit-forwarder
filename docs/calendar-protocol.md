@@ -1,7 +1,22 @@
 # Calendar adapter (under development)
 
-The native helper and MCP support read-only event calendars. HA calendar entities
-are not wired yet; calendar configuration currently affects MCP only.
+The native helper, MCP, and HA integration support read-only event calendars.
+Real-account recurrence and background operation remain release validation work.
+
+For HA, install the updated custom component and restart HA before enabling
+calendars in the Mac config. In integration setup, enter the same exact event
+calendar IDs under Allowed EventKit calendar IDs. HA maintains its own allowlist;
+older entries without calendar IDs reject incoming calendar snapshots. Existing
+entries currently require setup again to add calendar IDs; take care to preserve
+dashboard/entity references when replacing an entry.
+
+HA publishes one read-only calendar entity per calendar received. The rolling
+snapshot covers 30 days in the past and 90 days ahead, refreshed with each sync.
+Queries outside the stored window return an explicit error. MCP callers can
+request their own windows of up to 366 days. Calendar-only configurations can
+use an empty reminder `lists` array. Calendar read failure currently fails that
+sync cycle, including reminder publication; independent sync lanes remain a
+possible improvement.
 
 After installing the updated binaries, run `icloud-reminders-bridge discover-calendars`
 from an interactive terminal and grant Calendar permission. Copy exact IDs into

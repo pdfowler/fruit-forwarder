@@ -12,7 +12,7 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers import selector
 
-from .const import CONF_ALLOWED_LIST_IDS, CONF_BRIDGE_ID, CONF_PAIRING_TOKEN, DOMAIN
+from .const import CONF_ALLOWED_CALENDAR_IDS, CONF_ALLOWED_LIST_IDS, CONF_BRIDGE_ID, CONF_PAIRING_TOKEN, DOMAIN
 
 TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{43,128}$")
 
@@ -34,7 +34,7 @@ class ICloudRemindersBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
             if not TOKEN_PATTERN.fullmatch(token):
                 errors[CONF_PAIRING_TOKEN] = "invalid_token"
-            elif not allowed_list_ids:
+            elif not allowed_list_ids and not _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_CALENDAR_IDS, "")):
                 errors[CONF_ALLOWED_LIST_IDS] = "no_lists"
             else:
                 unique_id = hashlib.sha256(token.encode()).hexdigest()
@@ -47,11 +47,15 @@ class ICloudRemindersBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_BRIDGE_ID: user_input[CONF_BRIDGE_ID].strip(),
                         CONF_PAIRING_TOKEN: token,
                         CONF_ALLOWED_LIST_IDS: allowed_list_ids,
+                        CONF_ALLOWED_CALENDAR_IDS: _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_CALENDAR_IDS, "")),
                     },
                 )
 
         schema = vol.Schema(
             {
+                vol.Optional(CONF_ALLOWED_CALENDAR_IDS, default=""): selector.TextSelector(
+                    selector.TextSelectorConfig(multiline=True)
+                ),
                 vol.Required(CONF_NAME, default="iCloud Reminders Bridge"): str,
                 vol.Required(CONF_BRIDGE_ID, default="mac"): str,
                 vol.Required(CONF_PAIRING_TOKEN): selector.TextSelector(

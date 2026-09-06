@@ -125,8 +125,8 @@ func (c *Config) ValidateSync() error {
 	if strings.HasSuffix(u.Hostname(), ".invalid") {
 		return errors.New("replace the example home_assistant_url before syncing")
 	}
-	if len(c.Lists) == 0 {
-		return errors.New("configure at least one allowlisted reminder list before syncing")
+	if len(c.Lists) == 0 && len(c.Calendars) == 0 {
+		return errors.New("configure at least one allowlisted reminder list or calendar before syncing")
 	}
 	return nil
 }
