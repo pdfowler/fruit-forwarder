@@ -17,6 +17,7 @@ type List struct {
 }
 
 type Config struct {
+	MCPReadOnly        bool   `json:"mcp_read_only"`
 	BridgeID           string `json:"bridge_id"`
 	HomeAssistantURL   string `json:"home_assistant_url"`
 	PollInterval       string `json:"poll_interval"`

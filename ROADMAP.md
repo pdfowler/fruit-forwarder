@@ -8,7 +8,9 @@ Before a broadly recommended release:
 
 - Verify a fresh Mac install, permission grants, background operation, restart,
   and reboot recovery. Resolve the observed launchd EventKit timeout.
-- Add end-to-end MCP protocol tests and an optional read-only access policy.
+- Extend MCP verification to the installed stdio process and real EventKit.
+  In-memory protocol tests cover tool discovery, filtered reads, rejected
+  out-of-scope reads, write dispatch, and the optional read-only policy.
 - Test the HA integration against a supported HA release, including queue
   recovery, malformed requests, duplicate configuration, and stale entities.
 - Document and test create replay behavior across crashes: an EventKit save

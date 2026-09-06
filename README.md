@@ -20,6 +20,8 @@ for Home Assistant and local MCP configuration.
   list IDs for reads and writes.
 - HA and MCP offer create, edit, complete, and reopen. Delete and list-management
   operations are intentionally absent.
+- MCP can expose only read tools with `"mcp_read_only": true`; HA editing is
+  independently available.
 - The webhook token is stored in the macOS login Keychain. It is not in the
   LaunchAgent environment, repository, or JSON configuration.
 - Logs contain counts, command IDs, and errors—not reminder titles or notes.

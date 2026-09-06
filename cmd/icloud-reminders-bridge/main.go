@@ -64,7 +64,7 @@ func run() error {
 	defer cancel()
 	switch command {
 	case "mcp":
-		return mcpserver.Run(ctx, store)
+		return mcpserver.Run(ctx, store, cfg.MCPReadOnly)
 	case "sync-once", "serve":
 		if cfg.HomeAssistantURL == "" {
 			return errors.New("home_assistant_url is required for Home Assistant sync")

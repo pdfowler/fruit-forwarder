@@ -63,16 +63,23 @@ type ItemOutput struct {
 	Item model.Item `json:"item"`
 }
 
-func Run(ctx context.Context, store ReminderStore) error {
+func Run(ctx context.Context, store ReminderStore, readOnly bool) error {
+	return newServer(store, readOnly).Run(ctx, &mcp.StdioTransport{})
+}
+
+func newServer(store ReminderStore, readOnly bool) *mcp.Server {
 	bridge := &Server{store: store}
 	server := mcp.NewServer(&mcp.Implementation{Name: "icloud-reminders", Version: "0.1.0"}, nil)
 	mcp.AddTool(server, &mcp.Tool{Name: "reminder_lists", Description: "List the EventKit reminder lists explicitly allowlisted for this bridge."}, bridge.lists)
 	mcp.AddTool(server, &mcp.Tool{Name: "reminders_list", Description: "List reminders in one allowlisted list. This never reads outside the configured list IDs."}, bridge.items)
+	if readOnly {
+		return server
+	}
 	mcp.AddTool(server, &mcp.Tool{Name: "reminders_create", Description: "Create a reminder in one allowlisted list."}, bridge.create)
 	mcp.AddTool(server, &mcp.Tool{Name: "reminders_update", Description: "Update title, notes, due date, and status for an allowlisted reminder. This cannot delete reminders."}, bridge.update)
 	mcp.AddTool(server, &mcp.Tool{Name: "reminders_complete", Description: "Mark an allowlisted reminder complete."}, bridge.complete)
 	mcp.AddTool(server, &mcp.Tool{Name: "reminders_reopen", Description: "Mark an allowlisted reminder incomplete."}, bridge.reopen)
-	return server.Run(ctx, &mcp.StdioTransport{})
+	return server
 }
 
 func (s *Server) lists(ctx context.Context, _ *mcp.CallToolRequest, _ EmptyInput) (*mcp.CallToolResult, ListsOutput, error) {

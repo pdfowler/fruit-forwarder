@@ -10,8 +10,11 @@ provide a per-list permission grant. The list allowlist is enforced by bridge
 code, not by an Apple capability token. Other software running as the same
 user can potentially change the config or invoke the helper directly.
 
-MCP uses local stdio, with no network listener. A connected client can invoke
-all exposed write tools for allowed lists without an additional bridge prompt.
+MCP uses local stdio, with no network listener. By default a connected client
+can invoke all exposed write tools for allowed lists without an additional
+bridge prompt. Set `mcp_read_only` to `true` to omit all four write tools.
+Restart existing MCP sessions after changing this policy. This is a per-process
+policy, not a restriction on other software running under the same macOS user.
 Review tool approvals in the client. Reminder titles and notes are untrusted
 content and should never be treated as agent instructions.
 

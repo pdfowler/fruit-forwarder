@@ -94,7 +94,11 @@ Replace both absolute paths; clients may not expand `~` or shell variables.
 The client launches the process and communicates over stdin/stdout. There is
 no listening network port or HTTP MCP endpoint. Only connect trusted clients:
 the six tools allow list, read, create, update, complete, and reopen operations
-within the configured allowlist. MCP does not currently have a read-only mode.
+within the configured allowlist. To expose only the two read tools, set
+`"mcp_read_only": true` in the JSON config and restart the MCP client session.
+Write tools are then absent from the server catalog and direct calls to their
+names are rejected. This setting applies only to MCP; HA can still queue edits.
+Use a separate config file if different clients need different access policies.
 
 The MCP client may need its own Reminders permission. The server can establish
 a protocol session even when EventKit is unavailable; a successful handshake
