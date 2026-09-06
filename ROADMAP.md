@@ -2,7 +2,8 @@
 
 The target is an approachable local iCloud bridge for Home Assistant and MCP.
 Current implementation: Reminders through macOS EventKit, HA todo entities,
-and local stdio MCP. Calendar events are not implemented yet.
+and local stdio MCP. Read-only calendar events are available through MCP;
+HA calendar entities remain in development.
 
 Before a broadly recommended release:
 
@@ -28,8 +29,9 @@ Before a broadly recommended release:
 - Extend the EventKit adapter to calendars with a bounded time window, explicit
   calendar allowlists, HA calendar entities, and corresponding MCP tools.
   Native discovery and bounded reads are implemented with separate Calendar
-  permission and no-access boundary tests. Go wiring, HA entities, MCP tools,
-  and real recurrence/all-day validation remain open. See docs/calendar-protocol.md.
+  permission and no-access boundary tests. Go allowlist/window validation and
+  conditional MCP calendar read tools are implemented. HA entities and real
+  recurrence/all-day validation remain open. See docs/calendar-protocol.md.
 - Prepare release notes and a public repository with CI results and a private
   security-reporting channel.
 

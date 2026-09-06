@@ -72,6 +72,9 @@ func newServer(store ReminderStore, readOnly bool) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: "icloud-reminders", Version: "0.1.0"}, nil)
 	mcp.AddTool(server, &mcp.Tool{Name: "reminder_lists", Description: "List the EventKit reminder lists explicitly allowlisted for this bridge."}, bridge.lists)
 	mcp.AddTool(server, &mcp.Tool{Name: "reminders_list", Description: "List reminders in one allowlisted list. This never reads outside the configured list IDs."}, bridge.items)
+	if calendars, ok := store.(CalendarStore); ok && calendars.CalendarsEnabled() {
+		addCalendarTools(server, calendars)
+	}
 	if readOnly {
 		return server
 	}

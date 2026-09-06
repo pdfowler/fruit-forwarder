@@ -32,6 +32,15 @@ func run() error {
 		return usageError()
 	}
 	command := os.Args[1]
+	if command == "discover-calendars" {
+		calendars, err := reminderstore.DiscoverCalendars(context.Background(), config.DefaultEventKitHelperPath())
+		if err != nil {
+			return err
+		}
+		encoder := json.NewEncoder(os.Stdout)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(calendars)
+	}
 	if command == "discover" {
 		return discover()
 	}
@@ -130,5 +139,5 @@ func pair(cfg *config.Config) error {
 }
 
 func usageError() error {
-	return errors.New("usage: icloud-reminders-bridge <discover|pair|check-config|sync-once|serve|mcp> [--config path]")
+	return errors.New("usage: icloud-reminders-bridge <discover|discover-calendars|pair|check-config|sync-once|serve|mcp> [--config path]")
 }

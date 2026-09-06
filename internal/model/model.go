@@ -4,6 +4,24 @@ import "time"
 
 const ProtocolVersion = 1
 
+type Event struct {
+	UID         string `json:"uid"`
+	Summary     string `json:"summary"`
+	Start       string `json:"start"`
+	End         string `json:"end"`
+	AllDay      bool   `json:"all_day"`
+	TimeZone    string `json:"time_zone"`
+	Description string `json:"description,omitempty"`
+	Location    string `json:"location,omitempty"`
+}
+
+type Calendar struct {
+	ID     string  `json:"id"`
+	Name   string  `json:"name"`
+	Source string  `json:"source,omitempty"`
+	Events []Event `json:"events"`
+}
+
 type Item struct {
 	UID         string `json:"uid"`
 	Summary     string `json:"summary"`

@@ -27,6 +27,7 @@ type Config struct {
 	EventKitHelper     string `json:"eventkit_helper_path,omitempty"`
 	CompletedRetention string `json:"completed_retention"`
 	Lists              []List `json:"lists"`
+	Calendars          []List `json:"calendars,omitempty"`
 }
 
 func DefaultPath() string {
@@ -84,6 +85,16 @@ func (c *Config) Validate() error {
 		c.StatePath = filepath.Join(home, "Library", "Application Support", "icloud-reminders-bridge", "state.json")
 	}
 	seenIDs := make(map[string]struct{}, len(c.Lists))
+	calendarIDs := make(map[string]bool)
+	if len(c.Calendars) > 100 {
+		return errors.New("at most 100 calendars may be configured")
+	}
+	for _, calendar := range c.Calendars {
+		if strings.TrimSpace(calendar.ID) == "" || strings.TrimSpace(calendar.Name) == "" || calendarIDs[calendar.ID] {
+			return errors.New("calendars require unique non-empty IDs and non-empty names")
+		}
+		calendarIDs[calendar.ID] = true
+	}
 	seenNames := make(map[string]string, len(c.Lists))
 	for _, list := range c.Lists {
 		if strings.TrimSpace(list.ID) == "" || strings.TrimSpace(list.Name) == "" {

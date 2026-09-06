@@ -19,15 +19,19 @@ import (
 )
 
 type request struct {
-	Action  string     `json:"action"`
-	ListIDs []string   `json:"list_ids,omitempty"`
-	ListID  string     `json:"list_id,omitempty"`
-	Item    model.Item `json:"item,omitempty"`
+	CalendarIDs []string   `json:"calendar_ids,omitempty"`
+	Start       string     `json:"start,omitempty"`
+	End         string     `json:"end,omitempty"`
+	Action      string     `json:"action"`
+	ListIDs     []string   `json:"list_ids,omitempty"`
+	ListID      string     `json:"list_id,omitempty"`
+	Item        model.Item `json:"item,omitempty"`
 }
 
 type response struct {
-	Lists []model.List `json:"lists,omitempty"`
-	Item  *model.Item  `json:"item,omitempty"`
+	Calendars []model.Calendar `json:"calendars,omitempty"`
+	Lists     []model.List     `json:"lists,omitempty"`
+	Item      *model.Item      `json:"item,omitempty"`
 }
 
 type Runner interface {
@@ -70,6 +74,7 @@ func (r *commandRunner) Run(ctx context.Context, input request) (response, error
 }
 
 type Store struct {
+	calendars          []config.List
 	runner             Runner
 	allowed            map[string]config.List
 	completedRetention time.Duration
@@ -86,7 +91,7 @@ func New(cfg *config.Config) (*Store, error) {
 }
 
 func NewWithRunner(cfg *config.Config, runner Runner) *Store {
-	return &Store{runner: runner, allowed: cfg.AllowedIDs(), completedRetention: cfg.CompletedRetentionDuration()}
+	return &Store{runner: runner, allowed: cfg.AllowedIDs(), completedRetention: cfg.CompletedRetentionDuration(), calendars: append([]config.List(nil), cfg.Calendars...)}
 }
 
 func Discover(ctx context.Context, helperPath string) ([]model.List, error) {

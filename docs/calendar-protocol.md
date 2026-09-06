@@ -1,7 +1,21 @@
 # Calendar adapter (under development)
 
-The native helper now supports read-only event calendars. The Go CLI, HA calendar
-entities, and MCP calendar tools are not wired to these actions yet.
+The native helper and MCP support read-only event calendars. HA calendar entities
+are not wired yet; calendar configuration currently affects MCP only.
+
+After installing the updated binaries, run `icloud-reminders-bridge discover-calendars`
+from an interactive terminal and grant Calendar permission. Copy exact IDs into
+a separate `calendars` array in the bridge config, for example:
+
+```json
+"calendars": [{"id": "EXACT-CALENDAR-ID", "name": "Personal"}]
+```
+
+Restart the MCP session. `calendar_lists` returns configured calendars, and
+`calendar_events` accepts `calendar_id`, `start`, and `end`. Both tools are reads
+and remain available in `mcp_read_only` mode. Omitting `calendars` disables both
+tools and avoids requesting Calendar access. Discovery is a local CLI action;
+MCP cannot discover calendars outside the configured scope.
 
 `calendars` discovers event-calendar IDs, names, and sources. It requests Calendar
 full access separately from Reminders. Apple's full-access permission is broader

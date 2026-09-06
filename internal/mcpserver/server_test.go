@@ -13,6 +13,49 @@ import (
 
 type protocolStore struct{ writes atomic.Int32 }
 
+type calendarProtocolStore struct{ protocolStore }
+
+func (*calendarProtocolStore) CalendarsEnabled() bool { return true }
+func (*calendarProtocolStore) Calendars(context.Context) ([]model.Calendar, error) {
+	return []model.Calendar{{ID: "events", Name: "Events"}}, nil
+}
+func (*calendarProtocolStore) CalendarEvents(context.Context, string, string, string) ([]model.Event, error) {
+	return []model.Event{{UID: "event", Start: "2026-01-01", End: "2026-01-02", AllDay: true}}, nil
+}
+
+func TestCalendarToolsAvailableInReadOnlyMode(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	st, ct := mcp.NewInMemoryTransports()
+	ss, err := newServer(&calendarProtocolStore{}, true).Connect(ctx, st, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ss.Close()
+	client := mcp.NewClient(&mcp.Implementation{Name: "calendar-test", Version: "1"}, nil)
+	cs, err := client.Connect(ctx, ct, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cs.Close()
+	catalog, err := cs.ListTools(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(catalog.Tools) != 4 {
+		t.Fatalf("expected four read tools, got %d", len(catalog.Tools))
+	}
+	for name, args := range map[string]map[string]any{
+		"calendar_lists":  {},
+		"calendar_events": {"calendar_id": "events", "start": "2026-01-01T00:00:00Z", "end": "2026-02-01T00:00:00Z"},
+	} {
+		result, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: args})
+		if err != nil || result.IsError {
+			t.Fatalf("%s: %v, %v", name, result, err)
+		}
+	}
+}
+
 func (*protocolStore) Lists(context.Context) ([]model.List, error) {
 	return []model.List{{ID: "allowed", Name: "Tasks"}}, nil
 }
