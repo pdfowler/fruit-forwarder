@@ -15,6 +15,8 @@ Before a broadly recommended release:
   recovery, malformed requests, duplicate configuration, and stale entities.
   Runtime tests on HA 2026.2.3 now cover command recovery, acknowledgements,
   scope rejection, and rollback on storage failure or task cancellation;
+  they also cover revocation across restart and paused dispatch for unavailable
+  or read-only lists;
   HTTP webhook and complete entity lifecycle coverage remain open.
 - Document and test create replay behavior across crashes: an EventKit save
   and the local acknowledgement are separate operations, so a crash between

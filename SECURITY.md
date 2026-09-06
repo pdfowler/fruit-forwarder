@@ -27,6 +27,12 @@ HA persists reminder snapshots and pending commands in its storage. Recent
 completed-item filtering changes the published snapshot; it does not delete
 Apple Reminders history or scrub existing HA backups and recorder history.
 
+On integration load, the current HA allowlist also filters stored snapshots and
+queued commands. Removed lists and their commands are removed from active bridge
+storage, so restoring access later does not replay the old commands. Existing
+backups are unaffected. A temporarily missing or read-only list keeps its pending
+commands, but they are withheld until a writable snapshot for that list returns.
+
 ## Reporting
 
 Do not report vulnerabilities with tokens, reminder contents, or state files

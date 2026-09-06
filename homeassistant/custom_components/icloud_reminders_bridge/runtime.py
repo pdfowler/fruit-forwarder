@@ -47,15 +47,22 @@ class BridgeRuntime:
     async def async_load(self) -> None:
         """Restore the last confirmed snapshot and pending commands."""
         stored = await self._store.async_load() or {}
+        allowed_ids = set(self.entry.data[CONF_ALLOWED_LIST_IDS])
         self.lists = {
             item["id"]: item
             for item in stored.get("lists", [])
             if isinstance(item, dict) and isinstance(item.get("id"), str)
+            and item["id"] in allowed_ids
         }
         self.commands = [
-            item for item in stored.get("commands", []) if isinstance(item, dict)
+            item for item in stored.get("commands", [])
+            if isinstance(item, dict) and item.get("list_id") in allowed_ids
         ]
         self.last_sync = stored.get("last_sync")
+        if (len(self.lists) != len(stored.get("lists", []))
+                or len(self.commands) != len(stored.get("commands", []))):
+            # Persist revocation so re-adding a list cannot resurrect stale edits.
+            await self._async_save()
 
     @callback
     def subscribe(self, listener: UpdateCallback) -> Callable[[], None]:
@@ -75,12 +82,12 @@ class BridgeRuntime:
         """Validate and store a bridge snapshot, then return queued edits."""
         lists, applied_ids = self._validate_snapshot(payload)
         async with self._transaction():
-            if applied_ids:
-                self.commands = [
-                    command
-                    for command in self.commands
-                    if command.get("id") not in applied_ids
-                ]
+            allowed_ids = set(self.entry.data[CONF_ALLOWED_LIST_IDS])
+            self.commands = [
+                command for command in self.commands
+                if command.get("id") not in applied_ids
+                and command.get("list_id") in allowed_ids
+            ]
             self.lists = {item["id"]: item for item in lists}
             for command in self.commands:
                 if command["list_id"] in self.lists:
@@ -88,7 +95,13 @@ class BridgeRuntime:
             self.last_sync = datetime.now(UTC).isoformat()
             response = {
                 "version": PROTOCOL_VERSION,
-                "commands": deepcopy(self.commands),
+                # Keep temporarily unavailable/read-only edits queued, but do
+                # not ask EventKit to execute them until the list is writable.
+                "commands": deepcopy([
+                    command for command in self.commands
+                    if command["list_id"] in self.lists
+                    and not self.lists[command["list_id"]]["read_only"]
+                ]),
             }
         self._notify()
         return response
