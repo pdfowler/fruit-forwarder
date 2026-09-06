@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from copy import deepcopy
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 import uuid
 from typing import Any
@@ -73,7 +74,7 @@ class BridgeRuntime:
     ) -> dict[str, Any]:
         """Validate and store a bridge snapshot, then return queued edits."""
         lists, applied_ids = self._validate_snapshot(payload)
-        async with self._lock:
+        async with self._transaction():
             if applied_ids:
                 self.commands = [
                     command
@@ -85,7 +86,6 @@ class BridgeRuntime:
                 if command["list_id"] in self.lists:
                     self._apply_optimistic(command)
             self.last_sync = datetime.now(UTC).isoformat()
-            await self._async_save()
             response = {
                 "version": PROTOCOL_VERSION,
                 "commands": deepcopy(self.commands),
@@ -108,7 +108,7 @@ class BridgeRuntime:
             "list_id": list_id,
             "item": deepcopy(item),
         }
-        async with self._lock:
+        async with self._transaction():
             reminder_list = self.lists.get(list_id)
             if reminder_list is None or list_id not in self.entry.data[CONF_ALLOWED_LIST_IDS]:
                 raise ProtocolError("Reminder list is outside the configured allowlist")
@@ -122,7 +122,6 @@ class BridgeRuntime:
                     raise ProtocolError("Reminder no longer exists in this list")
             self.commands.append(command)
             self._apply_optimistic(command)
-            await self._async_save()
         self._notify()
         return command_id
 
@@ -195,6 +194,18 @@ class BridgeRuntime:
             else:
                 items[index] = item
             return
+
+    @asynccontextmanager
+    async def _transaction(self):
+        """Publish mutations only after storage succeeds; rollback failed saves."""
+        async with self._lock:
+            previous = deepcopy((self.lists, self.commands, self.last_sync))
+            try:
+                yield
+                await self._async_save()
+            except BaseException:
+                self.lists, self.commands, self.last_sync = previous
+                raise
 
     async def _async_save(self) -> None:
         await self._store.async_save(

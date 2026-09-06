@@ -4,6 +4,20 @@ Contributions are welcome. Please keep changes narrow and avoid adding
 credentials, reminder contents, EventKit identifiers, or generated build
 artifacts.
 
+HA runtime tests use a real Home Assistant Python package with isolated mocked
+storage. They exercise queue recovery and persistence failure without talking
+to your HA server or Apple account. With Python 3.13:
+
+```sh
+python3.13 -m venv .venv
+.venv/bin/pip install -r requirements-test.txt
+.venv/bin/python -m pytest -q
+```
+
+The pinned version is a reproducible test baseline, not a compatibility claim
+for every newer HA release. Webhook HTTP and full entity lifecycle tests remain
+separate release work.
+
 Before opening a pull request on macOS, run:
 
 ```sh
