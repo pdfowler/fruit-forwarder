@@ -25,3 +25,15 @@ jobs:
       - run: go test -race ./...
       - run: go vet ./...
       - run: bash -n scripts/install-macos.sh
+      - name: Build native EventKit helper
+        run: |
+          mkdir -p build
+          swiftc -O -parse-as-library eventkit-helper/main.swift \
+            -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
+            -Xlinker "$PWD/deployment/eventkit-helper-Info.plist" \
+            -o build/icloud-reminders-eventkit
+          codesign --force --sign - --options runtime \
+            --identifier com.example.icloud-reminders-bridge.eventkit \
+            --entitlements deployment/reminders.entitlements \
+            build/icloud-reminders-eventkit
+          codesign --verify --strict build/icloud-reminders-eventkit

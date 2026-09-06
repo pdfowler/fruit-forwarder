@@ -8,7 +8,9 @@ Before a broadly recommended release:
 
 - Verify a fresh Mac install, permission grants, background operation, restart,
   and reboot recovery. Resolve the observed launchd EventKit timeout.
-- Extend MCP verification to the installed stdio process and real EventKit.
+- Extend MCP verification to an installed application and real EventKit.
+  Subprocess tests now build the CLI and verify stdio configuration, read-only
+  enforcement, helper invocation, and helper failure reporting with synthetic data.
   In-memory protocol tests cover tool discovery, filtered reads, rejected
   out-of-scope reads, write dispatch, and the optional read-only policy.
 - Test the HA integration against a supported HA release, including queue

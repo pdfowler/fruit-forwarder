@@ -26,6 +26,13 @@ go vet ./...
 bash -n scripts/install-macos.sh
 ```
 
+The Go suite also builds a bridge subprocess and exercises its real stdio MCP
+transport with a synthetic executable helper. It verifies configuration wiring,
+reads, read-only enforcement, and graceful helper failure. It does not grant
+Reminders access or read Apple account data. CI additionally compiles and
+ad-hoc signs the Swift helper; this does not establish runtime permission or
+reboot reliability on a user's Mac.
+
 The native helper needs macOS and a user-granted Reminders permission. Changes
 to the Home Assistant component should preserve the list allowlist and the
 bounded completed-item retention behavior.
