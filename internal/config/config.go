@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,8 +52,11 @@ func (c *Config) Validate() error {
 	if strings.TrimSpace(c.BridgeID) == "" {
 		return errors.New("bridge_id is required")
 	}
-	if c.HomeAssistantURL != "" && !strings.HasPrefix(c.HomeAssistantURL, "https://") {
-		return errors.New("home_assistant_url must use https")
+	if c.HomeAssistantURL != "" {
+		u, err := url.Parse(c.HomeAssistantURL)
+		if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+			return errors.New("home_assistant_url must be an absolute HTTPS URL without credentials, query, or fragment")
+		}
 	}
 	if c.KeychainService == "" {
 		c.KeychainService = "com.example.icloud-reminders-bridge"
@@ -93,6 +97,24 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("duplicate list name %q is unsafe for EventKit creates", list.Name)
 		}
 		seenNames[folded] = list.ID
+	}
+	return nil
+}
+
+// ValidateSync checks requirements that do not apply to discovery or local MCP.
+func (c *Config) ValidateSync() error {
+	if err := c.Validate(); err != nil {
+		return err
+	}
+	if c.HomeAssistantURL == "" {
+		return errors.New("home_assistant_url is required for Home Assistant sync")
+	}
+	u, _ := url.Parse(c.HomeAssistantURL)
+	if strings.HasSuffix(u.Hostname(), ".invalid") {
+		return errors.New("replace the example home_assistant_url before syncing")
+	}
+	if len(c.Lists) == 0 {
+		return errors.New("configure at least one allowlisted reminder list before syncing")
 	}
 	return nil
 }

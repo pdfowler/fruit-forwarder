@@ -4,6 +4,11 @@ A local macOS bridge between Apple Reminders and Home Assistant. It uses Apple's
 EventKit API for reads and writes, exposes a small stdio MCP server, and pushes
 allowlisted reminder lists to Home Assistant todo entities.
 
+**Early release: Reminders only.** Calendar events are planned. Background
+EventKit permission and reboot recovery still need validation; see the
+[release roadmap](ROADMAP.md). Start with the complete [setup guide](docs/setup.md)
+for Home Assistant and local MCP configuration.
+
 ## Security boundary
 
 - Apple credentials never leave macOS. EventKit uses the Mac user's signed-in accounts
@@ -45,7 +50,7 @@ allowlisted reminder lists to Home Assistant todo entities.
    ```
 
 3. Edit `~/.config/icloud-reminders-bridge/config.json`, adding only the lists
-   you want to expose. Run `pair` to create a one-time token and configure the
+   you want to expose. Run `pair` to create a persistent bearer token and configure the
    Home Assistant custom integration with that token and the same list IDs.
 
 4. Start the per-user LaunchAgent:

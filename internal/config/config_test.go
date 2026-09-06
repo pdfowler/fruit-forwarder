@@ -2,6 +2,35 @@ package config
 
 import "testing"
 
+func TestSyncPreflight(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		url   string
+		lists []List
+		valid bool
+	}{
+		{"configured", "https://ha.example.com", []List{{ID: "one", Name: "Tasks"}}, true},
+		{"missing URL", "", []List{{ID: "one", Name: "Tasks"}}, false},
+		{"example URL", "https://home-assistant.example.invalid", []List{{ID: "one", Name: "Tasks"}}, false},
+		{"empty allowlist", "https://ha.example.com", nil, false},
+		{"embedded credentials", "https://user:password@ha.example.com", nil, false},
+		{"missing host", "https://", nil, false},
+		{"query", "https://ha.example.com?token=value", nil, false},
+		{"fragment", "https://ha.example.com#fragment", nil, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := Config{BridgeID: "mac", HomeAssistantURL: tc.url, Lists: tc.lists}
+			if err := cfg.ValidateSync(); (err == nil) != tc.valid {
+				t.Fatalf("ValidateSync() = %v; valid = %v", err, tc.valid)
+			}
+		})
+	}
+	local := Config{BridgeID: "mac"}
+	if err := local.Validate(); err != nil {
+		t.Fatalf("local MCP config must not require HA: %v", err)
+	}
+}
+
 func TestValidateSecurityAndAllowlist(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

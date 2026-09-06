@@ -1,0 +1,25 @@
+# Release roadmap
+
+The target is an approachable local iCloud bridge for Home Assistant and MCP.
+Current implementation: Reminders through macOS EventKit, HA todo entities,
+and local stdio MCP. Calendar events are not implemented yet.
+
+Before a broadly recommended release:
+
+- Verify a fresh Mac install, permission grants, background operation, restart,
+  and reboot recovery. Resolve the observed launchd EventKit timeout.
+- Add end-to-end MCP protocol tests and an optional read-only access policy.
+- Test the HA integration against a supported HA release, including queue
+  recovery, malformed requests, duplicate configuration, and stale entities.
+- Document and test create replay behavior across crashes: an EventKit save
+  and the local acknowledgement are separate operations, so a crash between
+  them can duplicate a creation.
+- Validate installer upgrades, token rotation, and rollback before publishing
+  signed or packaged releases. Manual component copying is the current HA path.
+- Extend the EventKit adapter to calendars with a bounded time window, explicit
+  calendar allowlists, HA calendar entities, and corresponding MCP tools.
+- Prepare release notes and a public repository with CI results and a private
+  security-reporting channel.
+
+Keep calendar access and reminder access independently configurable. Do not
+require Apple account passwords or Home Assistant admin tokens on the Mac.

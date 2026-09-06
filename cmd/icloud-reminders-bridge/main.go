@@ -47,6 +47,15 @@ func run() error {
 	if command == "pair" {
 		return pair(cfg)
 	}
+	if command == "check-config" || command == "sync-once" || command == "serve" {
+		if err := cfg.ValidateSync(); err != nil {
+			return err
+		}
+	}
+	if command == "check-config" {
+		fmt.Println("Home Assistant sync configuration is valid (connectivity and permissions not tested).")
+		return nil
+	}
 	store, err := reminderstore.New(cfg)
 	if err != nil {
 		return err
@@ -121,5 +130,5 @@ func pair(cfg *config.Config) error {
 }
 
 func usageError() error {
-	return errors.New("usage: icloud-reminders-bridge <discover|pair|sync-once|serve|mcp> [--config path]")
+	return errors.New("usage: icloud-reminders-bridge <discover|pair|check-config|sync-once|serve|mcp> [--config path]")
 }

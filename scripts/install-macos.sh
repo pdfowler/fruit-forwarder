@@ -34,19 +34,16 @@ if [[ ! -f "${CONFIG_PATH}" ]]; then
   install -m 0600 "${SERVICE_DIR}/config.example.json" "${CONFIG_PATH}"
   echo "Created ${CONFIG_PATH}; add exact list IDs from:" >&2
   echo "  '${BRIDGE_BIN}' discover" >&2
-  exit 2
+  if [[ "${1:-}" != "--install-only" ]]; then
+    exit 2
+  fi
 fi
 chmod 0600 "${CONFIG_PATH}"
 if [[ "${1:-}" == "--install-only" ]]; then
   echo "Installed binaries; LaunchAgent activation was not requested."
   exit 0
 fi
-if grep -Eq '"lists"[[:space:]]*:[[:space:]]*\[([[:space:]]*)\]' "${CONFIG_PATH}"; then
-  echo "Refusing to start with an empty list allowlist in ${CONFIG_PATH}." >&2
-  echo "Discover exact EventKit list IDs:" >&2
-  echo "  '${BRIDGE_BIN}' discover" >&2
-  exit 2
-fi
+"${BRIDGE_BIN}" check-config --config "${CONFIG_PATH}"
 
 sed \
   -e "s|@@UID@@|${UID}|g" \
