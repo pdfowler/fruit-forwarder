@@ -105,6 +105,13 @@ tasks:
   release:check:
     deps: [check, package:ha]
     cmds:
+      - |
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+          task package:macos
+          task package:mcp
+        else
+          echo "macOS artifacts skipped on $(uname -s); run release:check on macOS for the complete candidate"
+        fi
       - test -f dist/ha-fruit-forwarder/custom_components/icloud_reminders_bridge/manifest.json
       - test -f dist/ha-fruit-forwarder/brand/icon.png
       - scripts/check-hacs-export.sh
@@ -112,13 +119,6 @@ tasks:
   release:prepare:
     deps: [release:check]
     cmds:
-      - |
-        if [[ "$(uname -s)" == "Darwin" ]]; then
-          task package:macos
-          task package:mcp
-        else
-          echo "macOS artifacts skipped on $(uname -s); run release:prepare on macOS for the complete candidate"
-        fi
       - |
         mkdir -p dist
         python3 scripts/render-release-manifest.py

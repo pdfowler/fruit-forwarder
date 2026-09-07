@@ -107,8 +107,8 @@ task test           # Go, HA, and native EventKit tests when running on macOS
 task package:ha    # build the HACS tree and versioned HA archive
 task package:macos # build a versioned macOS tarball on macOS
 task package:mcp   # build the macOS MCPB and candidate registry metadata
-task release:check # validate a reproducible candidate without publishing
-task release:prepare # assemble every target available on this host
+task release:check # build/validate every target available on this host
+task release:prepare # record the verified candidate manifest
 ```
 
 The MCP registry metadata is intentionally rendered only after a versioned MCPB
