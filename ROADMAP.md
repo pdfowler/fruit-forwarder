@@ -32,8 +32,10 @@ Before a broadly recommended release:
   permission and no-access boundary tests. Go allowlist/window validation and
   conditional MCP calendar read tools are implemented. HA snapshot transport,
   calendar allowlists, read-only entities, cached window checks, and restoration
-  tests are implemented. Real recurrence/all-day validation and full lifecycle
-  verification remain open. See docs/calendar-protocol.md.
+  tests are implemented. Calendar failures no longer block reminder
+  publication; HA retains the last confirmed calendar snapshot and exposes its
+  last successful calendar sync timestamp. Real recurrence/all-day validation
+  and full lifecycle verification remain open. See docs/calendar-protocol.md.
 - Prepare release notes and a public repository with CI results and a private
   security-reporting channel.
 

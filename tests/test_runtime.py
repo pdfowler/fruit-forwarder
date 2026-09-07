@@ -23,7 +23,7 @@ def snapshot(status="needs_action", applied=None):
 
 def runtime(tmp_path):
     hass = HomeAssistant(str(tmp_path))
-    entry = SimpleNamespace(entry_id="test", data={
+    entry = SimpleNamespace(entry_id="test", title="Fruit Forwarder", data={
         "bridge_id": "test", "allowed_list_ids": ["allowed"]
     })
     result = BridgeRuntime(hass, entry)

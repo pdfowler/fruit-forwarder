@@ -8,6 +8,7 @@ from typing import Any
 from homeassistant.components.todo import TodoItem, TodoListEntity
 from homeassistant.components.todo.const import TodoItemStatus, TodoListEntityFeature
 from homeassistant.core import callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import ICloudRemindersConfigEntry
@@ -46,7 +47,7 @@ class ICloudReminderTodoEntity(TodoListEntity):
 
     _attr_has_entity_name = True
     _attr_should_poll = False
-    _attr_supported_features = (
+    _writable_features = (
         TodoListEntityFeature.CREATE_TODO_ITEM
         | TodoListEntityFeature.UPDATE_TODO_ITEM
         | TodoListEntityFeature.SET_DUE_DATE_ON_ITEM
@@ -85,6 +86,11 @@ class ICloudReminderTodoEntity(TodoListEntity):
         """Adopt the latest EventKit-confirmed or optimistic state."""
         reminder_list = self._runtime.lists.get(self._list_id)
         self._attr_available = reminder_list is not None
+        self._attr_supported_features = (
+            self._writable_features
+            if reminder_list is not None and not reminder_list.get("read_only")
+            else TodoListEntityFeature(0)
+        )
         self._attr_todo_items = (
             [_to_ha_item(item) for item in reminder_list["items"]]
             if reminder_list
@@ -95,12 +101,14 @@ class ICloudReminderTodoEntity(TodoListEntity):
 
     async def async_create_todo_item(self, item: TodoItem) -> None:
         """Queue creation for the macOS bridge and expose it optimistically."""
+        self._ensure_writable()
         await self._runtime.async_queue_command(
             "create", self._list_id, _from_ha_item(item)
         )
 
     async def async_update_todo_item(self, item: TodoItem) -> None:
         """Queue an update, completion, or reopen for the macOS bridge."""
+        self._ensure_writable()
         current = next(
             (
                 existing
@@ -118,6 +126,10 @@ class ICloudReminderTodoEntity(TodoListEntity):
         await self._runtime.async_queue_command(
             action, self._list_id, _from_ha_item(item)
         )
+
+    def _ensure_writable(self) -> None:
+        if self._runtime.lists.get(self._list_id, {}).get("read_only"):
+            raise HomeAssistantError("This EventKit reminder list is read-only")
 
 
 def _to_ha_item(item: dict[str, Any]) -> TodoItem:
