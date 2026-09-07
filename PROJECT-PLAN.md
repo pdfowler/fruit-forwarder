@@ -242,7 +242,7 @@ Tooling references: [Task guide](https://taskfile.dev/docs/guide), [Task schema]
 - Define ordering and conflict handling for two edits to one reminder, recurring reminders, externally deleted items and list moves.
 - Separate calendar read failure from reminder publication and command processing where feasible. A revoked Calendar permission must have a documented effect on otherwise healthy Reminders service.
 - Preserve good snapshots during transient failures. Publish per-capability health and last successful sync instead of making stale data appear current.
-- Add retry backoff, jitter and reconnect behavior. Consider EventKit change notifications to accelerate updates while keeping polling as a recovery mechanism.
+- The daemon now uses bounded exponential retry backoff with jitter after Home Assistant failures and returns to the configured polling interval after success. Continue evaluating EventKit change notifications to accelerate updates while keeping polling as a recovery mechanism.
 - Bound queue size, payload bytes, event counts and helper output. Reconcile the current one-MiB payload limit with 10,000-item limits and realistic notes. Use explicit failure, pagination or chunking rather than silent loss.
 - Introduce protocol capability/version negotiation before relying on optional fields across mixed HA/Mac versions. Define upgrade order and rejection behavior.
 

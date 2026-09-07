@@ -95,6 +95,9 @@ Open HA's To-do lists page. A list entity appears after its first snapshot.
 Use a disposable reminder to verify create, complete, and reopen in HA and
 Apple Reminders. HA changes are queued until the Mac's next sync, normally
 within 30 seconds plus Apple's own account sync delay.
+Transient Home Assistant failures use bounded exponential retry backoff with
+jitter (capped at 15 minutes); a successful sync returns to the configured
+poll interval.
 
 After foreground sync succeeds, enable the background service:
 

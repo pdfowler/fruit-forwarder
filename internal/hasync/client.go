@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -21,6 +22,7 @@ import (
 const maxResponseBytes = 1 << 20
 const maxCommands = 1000
 const maxCommandString = 256
+const maxRetryBackoff = 15 * time.Minute
 
 type ReminderStore interface {
 	Snapshot(context.Context) ([]model.List, error)
@@ -35,6 +37,7 @@ type Client struct {
 	state      *state.State
 	httpClient *http.Client
 	logger     *slog.Logger
+	random     *rand.Rand
 }
 
 func New(cfg *config.Config, token string, store ReminderStore, bridgeState *state.State, logger *slog.Logger) *Client {
@@ -48,25 +51,70 @@ func NewWithVersion(cfg *config.Config, token string, store ReminderStore, bridg
 			return http.ErrUseLastResponse
 		},
 	}
-	return &Client{cfg: cfg, version: version, token: token, store: store, state: bridgeState, httpClient: httpClient, logger: logger}
+	return &Client{
+		cfg: cfg, version: version, token: token, store: store, state: bridgeState,
+		httpClient: httpClient, logger: logger,
+		random: rand.New(rand.NewSource(time.Now().UnixNano())),
+	}
 }
 
 func (c *Client) Run(ctx context.Context) error {
-	if _, err := c.SyncOnce(ctx); err != nil {
-		c.logger.Error("initial Home Assistant sync failed", "error", err)
-	}
-	ticker := time.NewTicker(c.cfg.Interval())
-	defer ticker.Stop()
+	failures := 0
 	for {
+		if _, err := c.SyncOnce(ctx); err != nil {
+			failures++
+			c.logger.Error("Home Assistant sync failed", "error", err, "consecutive_failures", failures)
+		} else {
+			failures = 0
+		}
+		delay := retryDelay(c.cfg.Interval(), failures, c.random.Float64())
+		timer := time.NewTimer(delay)
 		select {
 		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			if _, err := c.SyncOnce(ctx); err != nil {
-				c.logger.Error("Home Assistant sync failed", "error", err)
+			if !timer.Stop() {
+				<-timer.C
 			}
+			return nil
+		case <-timer.C:
 		}
 	}
+}
+
+// retryDelay backs off only after a failed sync. Jitter prevents a group of
+// bridges recovering at the same time from synchronizing in lockstep, while
+// the cap ensures a failure cannot make recovery effectively indefinite.
+func retryDelay(base time.Duration, consecutiveFailures int, jitter float64) time.Duration {
+	if consecutiveFailures <= 0 {
+		return base
+	}
+	if jitter < 0 {
+		jitter = 0
+	}
+	if jitter > 1 {
+		jitter = 1
+	}
+	delay := base
+	for i := 0; i < consecutiveFailures; i++ {
+		if delay >= maxRetryBackoff/2 {
+			delay = maxRetryBackoff
+			break
+		}
+		delay *= 2
+	}
+	if delay > maxRetryBackoff {
+		delay = maxRetryBackoff
+	}
+	// Keep jitter within +/-10% of the exponential delay and never make a
+	// retry faster than the configured normal interval.
+	factor := 0.9 + (0.2 * jitter)
+	result := time.Duration(float64(delay) * factor)
+	if result < base {
+		return base
+	}
+	if result > maxRetryBackoff {
+		return maxRetryBackoff
+	}
+	return result
 }
 
 func (c *Client) SyncOnce(ctx context.Context) (int, error) {

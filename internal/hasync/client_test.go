@@ -71,6 +71,22 @@ func TestCalendarSnapshotSync(t *testing.T) {
 	}
 }
 
+func TestRetryDelayBacksOffAndResets(t *testing.T) {
+	base := 30 * time.Second
+	if got := retryDelay(base, 0, 0); got != base {
+		t.Fatalf("success delay = %s, want %s", got, base)
+	}
+	if got := retryDelay(base, 1, 0); got != 54*time.Second {
+		t.Fatalf("first retry delay = %s, want 54s", got)
+	}
+	if got := retryDelay(base, 2, 1); got != 132*time.Second {
+		t.Fatalf("second retry delay = %s, want 132s", got)
+	}
+	if got := retryDelay(base, 100, 1); got != maxRetryBackoff {
+		t.Fatalf("capped retry delay = %s, want %s", got, maxRetryBackoff)
+	}
+}
+
 func TestCalendarFailureDoesNotBlockReminderPublication(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var payload model.Snapshot
