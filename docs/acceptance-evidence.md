@@ -1,0 +1,81 @@
+# Fruit Forwarder acceptance evidence
+
+This ledger is the release gate for the requirements in
+[PROJECT-PLAN.md](../PROJECT-PLAN.md). It deliberately distinguishes source
+implementation and synthetic tests from evidence gathered from an installed
+artifact, a real Apple account, Home Assistant, and an independent MCP client.
+Do not mark a row **proven** from unit-test output alone.
+
+## Status vocabulary
+
+- **Proven** — the required scope has recorded, redacted evidence attached or
+  linked below.
+- **Partial** — some automated or synthetic coverage exists, but the required
+  real-environment or publication evidence is still missing.
+- **Missing** — no adequate evidence has been recorded.
+- **Deferred** — explicitly removed from the supported release scope.
+
+## Requirement ledger
+
+| ID | Requirement | Current status | Existing evidence | Still required |
+| --- | --- | --- | --- | --- |
+| R1 | Native macOS account access without Apple credentials | Partial | EventKit request-validation tests; signed/ad-hoc helper build checks | Fresh installed-app permission, lock/sleep/reboot and login lifecycle evidence |
+| R2 | Scoped Reminders mutations through HA and MCP | Partial | Go, MCP and HA protocol tests; allowlist and recovery tests | Disposable real-list create/edit/complete/reopen, including out-of-scope denial |
+| R3 | Scoped read-only calendars through HA and MCP | Partial | Calendar mapping, window validation and transport tests | Timed/all-day/recurring/timezone fixtures against a real account and both clients |
+| R4 | Independent reminder/calendar opt-in | Partial | Separate optional configuration and calendar-failure isolation tests | Reminder-only, calendar-only, combined and permission-denied installed runs |
+| R5 | Secure local MCP | Partial | Stdio protocol tests, read-only tool omission, bounded input checks, MCPB validation | At least one independent MCP client, process/listener inspection and permission evidence |
+| R6 | Recoverable HA synchronization | Partial | Durable state journal, explicit recovery command, offline/calendar-failure tests | HA restart/crash/concurrent-edit tests with visible pending/error UX |
+| R7 | Approachable installation/upgrades | Partial | Versioned archive, installer, rollback scripts and setup documentation | Clean-user install, upgrade and rollback from the packaged artifact |
+| R8 | Privacy-preserving operation | Partial | Keychain stdin handling, file trust checks, redaction and bounded-state tests | Review of installed process args, backups, diagnostics, ACLs and signed release behavior |
+| R9 | Shareable open-source distribution | Partial | MIT license, CI, contributor/security docs, HACS export, macOS/MCP candidates | Authorized public repositories, release assets, support channel and ecosystem publication |
+| R10 | Honest compatibility/support claims | Partial | [compatibility matrix](compatibility.md), version checks and release manifest | Recorded supported-version runs, known-limitations review and support policy |
+
+## Current candidate evidence
+
+Run these commands from a clean checkout on the source revision intended for
+release:
+
+```sh
+task check
+task release:prepare
+```
+
+`dist/release-manifest.json` is the authoritative candidate index. It records
+the source revision, dirty-tree state, counterpart versions, and SHA-256
+values for the HA, macOS, and MCP artifacts. The manifest is not publication
+evidence by itself: it must be paired with the installed acceptance records
+below.
+
+## Installed acceptance record template
+
+Create one redacted record per run, for example under a maintainer-controlled
+release evidence store rather than committing household data here:
+
+```text
+run_id:
+date_utc:
+source_revision:
+artifact_manifest_sha256:
+macos_version_and_architecture:
+home_assistant_version:
+mcp_client_and_version:
+scenario:
+expected_result:
+actual_result:
+result: pass | fail | blocked
+evidence_locations:
+notes_with_no_household_contents:
+```
+
+Use disposable lists/calendars and redact titles, notes, EventKit IDs, URLs,
+tokens, account identifiers, and personal paths. A blocked external test is
+evidence of an open gate, not a pass.
+
+## Publication readiness rule
+
+Do not publish a target while a required row is only **Partial**, unless the
+maintainer records an explicit product decision that narrows the supported
+claim and updates the compatibility matrix, setup guide, changelog, and
+release manifest accordingly. HACS and MCP listing status must be recorded
+separately; generated metadata and a repository name do not prove listing
+acceptance.

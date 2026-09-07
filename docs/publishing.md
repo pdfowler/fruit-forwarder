@@ -20,6 +20,7 @@ Before running it:
    unchanged; the unsigned MCPB ZIP receives the same timestamp/order
    normalization before any optional signature is applied.
 4. Complete the real Mac/HA/MCP acceptance matrix in `PROJECT-PLAN.md`,
+   using the redacted ledger in [acceptance-evidence.md](acceptance-evidence.md),
    including disposable reminders/calendars and rollback evidence.
 5. Confirm the GitHub repository namespace, release signing/notarization policy,
    HACS repository destination, and MCP Registry publisher namespace.

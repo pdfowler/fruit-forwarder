@@ -13,6 +13,7 @@ See the [compatibility matrix](docs/compatibility.md) for the current support
 claim and [architecture decisions](docs/adr/) for the monorepo and trust-boundary
 choices.
 Release history is tracked in [CHANGELOG.md](CHANGELOG.md).
+The release gate is tracked in [docs/acceptance-evidence.md](docs/acceptance-evidence.md).
 
 ## Security boundary
 
