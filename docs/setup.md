@@ -142,3 +142,8 @@ maintainer signing credentials are supplied to the release workflow.
 `task package:macos` produces the companion versioned macOS tarball. These
 commands prepare artifacts only; publishing a GitHub release, HACS repository,
 or MCP Registry entry remains an explicit maintainer step.
+
+To stop and remove only the installed service files while preserving household
+configuration, pairing, state, rollback copies, and logs, run the bundled
+`scripts/uninstall-macos.sh`. Credential/state removal is intentionally a
+separate, manual cleanup decision.

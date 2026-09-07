@@ -42,9 +42,10 @@ cp "${repo_dir}/README.md" "${staging}/fruit-forwarder-macos-${version}/"
 cp "${repo_dir}/docs/setup.md" "${staging}/fruit-forwarder-macos-${version}/"
 cp "${repo_dir}/scripts/install-package-macos.sh" "${staging}/fruit-forwarder-macos-${version}/scripts/"
 cp "${repo_dir}/scripts/rollback-macos.sh" "${staging}/fruit-forwarder-macos-${version}/scripts/"
+cp "${repo_dir}/scripts/uninstall-macos.sh" "${staging}/fruit-forwarder-macos-${version}/scripts/"
 cp "${repo_dir}/scripts/render-launchagent.py" "${staging}/fruit-forwarder-macos-${version}/scripts/"
 chmod 0755 "${staging}/fruit-forwarder-macos-${version}/bin/"*
-chmod 0755 "${staging}/fruit-forwarder-macos-${version}/scripts/install-package-macos.sh" "${staging}/fruit-forwarder-macos-${version}/scripts/rollback-macos.sh"
+chmod 0755 "${staging}/fruit-forwarder-macos-${version}/scripts/"*.sh
 
 "${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-bridge" version | grep -Fx "${version}" >/dev/null
 mkdir -p "${output_dir}"

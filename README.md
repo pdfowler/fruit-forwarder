@@ -109,6 +109,8 @@ checkout's `scripts/install-macos.sh` remains the developer build/install path.
 The packaged installer preserves the previous executable pair under the same
 rollback directory and uses the bundled LaunchAgent renderer; it does not
 overwrite an existing runtime configuration or Keychain item.
+The bundled `scripts/uninstall-macos.sh` removes only service files and keeps
+that runtime data for an explicit later cleanup decision.
 
 ```sh
 go test -race ./...
