@@ -102,6 +102,8 @@ task release:prepare # assemble every target available on this host
 The MCP registry metadata is intentionally rendered only after a versioned MCPB
 artifact has been built and hashed; see [packaging/mcp/README.md](packaging/mcp/README.md).
 No publishing command is implicit in a build or release check.
+Maintainer publication gates and the HACS/MCP follow-up steps are documented in
+[docs/publishing.md](docs/publishing.md).
 
 The macOS tarball is self-installing: extract it, copy the exact IDs into the
 included configuration, and run `scripts/install-package-macos.sh`. The source

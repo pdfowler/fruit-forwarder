@@ -157,6 +157,7 @@ fruit-forwarder/
   release/                    # component versions and compatibility manifest
   scripts/                    # reusable build/validation/export helpers
   docs/
+  docs/publishing.md
   .github/workflows/
   dist/                       # ignored generated artifacts
 ```

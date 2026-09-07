@@ -1,0 +1,78 @@
+name: Publish confirmed release
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type PUBLISH to create a GitHub release from fresh artifacts
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-ha:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: scripts/package-ha.sh "$(tr -d '[:space:]' < release/VERSION)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-ha
+          path: dist/ha
+
+  prepare-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: scripts/package-macos.sh "$(tr -d '[:space:]' < release/VERSION)"
+      - run: scripts/package-mcpb.sh "$(tr -d '[:space:]' < release/VERSION)"
+      - name: Render and verify MCP Registry metadata
+        run: |
+          version="$(tr -d '[:space:]' < release/VERSION)"
+          checksum="$(awk '{print $1}' "dist/mcp/fruit-forwarder-mcp-${version}.mcpb.sha256")"
+          scripts/render-mcp-server-json.sh "$version" \
+            "https://github.com/pdfowler/fruit-forwarder/releases/download/v${version}/fruit-forwarder-mcp-${version}.mcpb" \
+            "$checksum"
+          scripts/check-mcp-package.sh "$version"
+      - run: python3 scripts/render-release-manifest.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: |
+            dist/macos
+            dist/mcp
+            dist/release-manifest.json
+
+  publish:
+    if: ${{ inputs.confirm == 'PUBLISH' }}
+    needs: [prepare-ha, prepare-macos]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Create GitHub release with immutable candidate assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(python3 -c 'import json; print(json.load(open("dist/release-manifest.json"))["version"])')"
+          mapfile -t assets < <(find dist -type f ! -name 'release-manifest.json' -print | sort)
+          gh release create "v${version}" "${assets[@]}" \
+            --title "Fruit Forwarder ${version}" \
+            --generate-notes
