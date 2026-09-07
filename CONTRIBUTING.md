@@ -48,3 +48,8 @@ reboot reliability on a user's Mac.
 The native helper needs macOS and a user-granted Reminders permission. Changes
 to the Home Assistant component should preserve the list allowlist and the
 bounded completed-item retention behavior.
+
+Dependency updates are reviewed through Dependabot pull requests. Keep the
+generated release artifacts and household-specific configuration out of those
+updates; run the full `task check` and the supported packaging checks before
+merging changes that affect a release target.
