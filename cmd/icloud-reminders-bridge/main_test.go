@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -28,14 +29,19 @@ func TestStdioProcess(t *testing.T) {
 		name        string
 		readOnly    bool
 		helperFails bool
+		calendar    bool
 	}{
-		{"read_only", true, false},
-		{"writable", false, false},
-		{"helper_unavailable", true, true},
+		{"read_only", true, false, false},
+		{"writable", false, false, false},
+		{"helper_unavailable", true, true, false},
+		{"calendar_only", true, false, true},
+		{"combined", false, false, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			helper := filepath.Join(t.TempDir(), "synthetic-helper")
-			script := "#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '{\"lists\":[{\"id\":\"allowed\",\"name\":\"Tasks\",\"read_only\":false,\"items\":[{\"uid\":\"one\",\"summary\":\"Synthetic task\",\"status\":\"needs_action\"}]}]}'\n"
+			script := "#!/bin/sh\npayload=$(cat)\nif printf '%s' \"$payload\" | grep -q '\"action\":\"calendar_snapshot\"'; then\n  printf '%s\\n' '{\"calendars\":[{\"id\":\"events\",\"name\":\"Events\",\"events\":[{\"uid\":\"event-1\",\"summary\":\"Synthetic event\",\"start\":\"2026-01-01T10:00:00Z\",\"end\":\"2026-01-01T11:00:00Z\",\"all_day\":false,\"time_zone\":\"UTC\"}]}]}'\n"
+			script += "elif printf '%s' \"$payload\" | grep -q '\"action\":\"calendars\"'; then\n  printf '%s\\n' '{\"calendars\":[{\"id\":\"events\",\"name\":\"Events\",\"events\":[]}]}'\n"
+			script += "else\n  printf '%s\\n' '{\"lists\":[{\"id\":\"allowed\",\"name\":\"Tasks\",\"read_only\":false,\"items\":[{\"uid\":\"one\",\"summary\":\"Synthetic task\",\"status\":\"needs_action\"}]}]}'\nfi\n"
 			if tc.helperFails {
 				script = "#!/bin/sh\ncat >/dev/null\nexit 1\n"
 			}
@@ -43,11 +49,18 @@ func TestStdioProcess(t *testing.T) {
 				t.Fatal(err)
 			}
 			configPath := filepath.Join(t.TempDir(), "config.json")
-			config, err := json.Marshal(map[string]any{
+			configValues := map[string]any{
 				"bridge_id": "test", "mcp_read_only": tc.readOnly,
 				"eventkit_helper_path": helper,
 				"lists":                []map[string]string{{"id": "allowed", "name": "Tasks"}},
-			})
+			}
+			if tc.calendar {
+				configValues["calendars"] = []map[string]string{{"id": "events", "name": "Events"}}
+				if tc.name == "calendar_only" {
+					configValues["lists"] = []map[string]string{}
+				}
+			}
+			config, err := json.Marshal(configValues)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -69,31 +82,55 @@ func TestStdioProcess(t *testing.T) {
 			if tc.readOnly {
 				wantTools = 2
 			}
+			if tc.calendar {
+				wantTools += 2
+			}
 			if len(catalog.Tools) != wantTools {
 				t.Fatalf("tool count = %d, want %d", len(catalog.Tools), wantTools)
 			}
-			result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "reminders_list", Arguments: map[string]any{"list_id": "allowed"}})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if result.IsError != tc.helperFails {
-				t.Fatalf("tool error = %v, want %v", result.IsError, tc.helperFails)
-			}
-			if !tc.helperFails {
-				data, err := json.Marshal(result.StructuredContent)
+			if tc.calendar {
+				result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "calendar_events", Arguments: map[string]any{
+					"calendar_id": "events", "start": "2026-01-01T00:00:00Z", "end": "2026-01-02T00:00:00Z",
+				}})
 				if err != nil {
 					t.Fatal(err)
 				}
-				var output struct {
-					Items []struct {
-						UID string `json:"uid"`
-					} `json:"items"`
+				if result.IsError != tc.helperFails {
+					t.Fatalf("calendar tool error = %v, want %v", result.IsError, tc.helperFails)
 				}
-				if err := json.Unmarshal(data, &output); err != nil {
+				if !tc.helperFails {
+					data, err := json.Marshal(result.StructuredContent)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if !strings.Contains(string(data), "event-1") {
+						t.Fatalf("unexpected calendar events: %s", data)
+					}
+				}
+			} else {
+				result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "reminders_list", Arguments: map[string]any{"list_id": "allowed"}})
+				if err != nil {
 					t.Fatal(err)
 				}
-				if len(output.Items) != 1 || output.Items[0].UID != "one" {
-					t.Fatalf("unexpected items: %s", data)
+				if result.IsError != tc.helperFails {
+					t.Fatalf("tool error = %v, want %v", result.IsError, tc.helperFails)
+				}
+				if !tc.helperFails {
+					data, err := json.Marshal(result.StructuredContent)
+					if err != nil {
+						t.Fatal(err)
+					}
+					var output struct {
+						Items []struct {
+							UID string `json:"uid"`
+						} `json:"items"`
+					}
+					if err := json.Unmarshal(data, &output); err != nil {
+						t.Fatal(err)
+					}
+					if len(output.Items) != 1 || output.Items[0].UID != "one" {
+						t.Fatalf("unexpected items: %s", data)
+					}
 				}
 			}
 			if tc.readOnly {
