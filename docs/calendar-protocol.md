@@ -18,6 +18,9 @@ use an empty reminder `lists` array. Calendar read failure currently fails that
 sync cycle, including reminder publication; independent sync lanes remain a
 possible improvement.
 
+Existing HA entries can add or remove calendars through the integration's
+Reconfigure action; entry identity, pairing, and reminder entities are retained.
+
 After installing the updated binaries, run `icloud-reminders-bridge discover-calendars`
 from an interactive terminal and grant Calendar permission. Copy exact IDs into
 a separate `calendars` array in the bridge config, for example:

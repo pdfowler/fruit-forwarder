@@ -14,6 +14,7 @@ from custom_components.icloud_reminders_bridge.config_flow import (  # noqa: E40
 from custom_components.icloud_reminders_bridge.const import (  # noqa: E402
     CONF_ALLOWED_CALENDAR_IDS,
     CONF_ALLOWED_LIST_IDS,
+    CONF_BRIDGE_ID,
     CONF_PAIRING_TOKEN,
 )
 
@@ -93,3 +94,25 @@ async def test_initial_setup_rejects_blank_identity():
         }
     ) == {"type": "form"}
     assert flow.async_show_form.call_args.kwargs["errors"] == {"name": "invalid_name"}
+
+
+@pytest.mark.asyncio
+async def test_initial_setup_rejects_duplicate_bridge_id():
+    flow = ICloudRemindersBridgeConfigFlow()
+    flow.hass = SimpleNamespace(
+        config_entries=SimpleNamespace(
+            async_entries=lambda _domain: [SimpleNamespace(data={CONF_BRIDGE_ID: "mac"})]
+        )
+    )
+    flow.async_show_form = MagicMock(return_value={"type": "form"})
+
+    assert await flow.async_step_user(
+        {
+            "name": "Another",
+            CONF_BRIDGE_ID: "mac",
+            CONF_PAIRING_TOKEN: "a" * 64,
+            CONF_ALLOWED_LIST_IDS: "list",
+            CONF_ALLOWED_CALENDAR_IDS: "",
+        }
+    ) == {"type": "form"}
+    assert flow.async_show_form.call_args.kwargs["errors"] == {"base": "already_configured"}
