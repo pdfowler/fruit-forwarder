@@ -9,13 +9,15 @@ Before running it:
 
 1. Confirm the source revision is clean and all commits are authored and
    committed as `pfowler@icloud.com`.
-2. Run `task release:prepare` on macOS and inspect the release manifest,
+2. Create the matching annotated version tag (`v<release/VERSION>`) and run the
+   workflow from that tag; the workflow refuses branch-based publication.
+3. Run `task release:prepare` on macOS and inspect the release manifest,
    checksums, HACS archive, macOS tarball, and MCPB contents.
-3. Complete the real Mac/HA/MCP acceptance matrix in `PROJECT-PLAN.md`,
+4. Complete the real Mac/HA/MCP acceptance matrix in `PROJECT-PLAN.md`,
    including disposable reminders/calendars and rollback evidence.
-4. Confirm the GitHub repository namespace, release signing/notarization policy,
+5. Confirm the GitHub repository namespace, release signing/notarization policy,
    HACS repository destination, and MCP Registry publisher namespace.
-5. Run the workflow only after the protected environment reviewer approves the
+6. Run the workflow only after the protected environment reviewer approves the
    exact source revision and version.
 
 After the GitHub release exists:

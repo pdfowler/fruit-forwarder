@@ -55,18 +55,39 @@ jobs:
             dist/release-manifest.json
 
   publish:
-    if: ${{ inputs.confirm == 'PUBLISH' }}
+    if: ${{ inputs.confirm == 'PUBLISH' && startsWith(github.ref, 'refs/tags/v') }}
     needs: [prepare-ha, prepare-macos]
     runs-on: ubuntu-latest
     environment: release
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
           path: dist
           merge-multiple: true
+      - name: Verify tagged source and attribution
+        run: |
+          version="$(tr -d '[:space:]' < release/VERSION)"
+          test "${GITHUB_REF_NAME}" = "v${version}"
+          test -z "$(git status --porcelain)"
+          if git log --format='%an <%ae> | %cn <%ce>' | awk '$0 !~ /pfowler@icloud.com/ { found=1 } END { exit found ? 0 : 1 }'; then
+            echo "found a commit without pfowler@icloud.com author/committer attribution" >&2
+            exit 1
+          fi
+      - name: Verify release manifest source revision
+        run: |
+          python3 - <<'PY'
+          import json, subprocess
+          manifest = json.load(open("dist/release-manifest.json"))
+          head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          if manifest["source_revision"] != head or manifest["source_dirty"]:
+              raise SystemExit("release manifest does not describe the checked-out clean source revision")
+          PY
       - name: Create GitHub release with immutable candidate assets
         env:
           GH_TOKEN: ${{ github.token }}
@@ -74,5 +95,6 @@ jobs:
           version="$(python3 -c 'import json; print(json.load(open("dist/release-manifest.json"))["version"])')"
           mapfile -t assets < <(find dist -type f ! -name 'release-manifest.json' -print | sort)
           gh release create "v${version}" "${assets[@]}" \
+            --verify-tag \
             --title "Fruit Forwarder ${version}" \
             --generate-notes
