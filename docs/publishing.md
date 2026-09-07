@@ -31,9 +31,12 @@ Before running it:
 
 After the GitHub release exists:
 
-- Push the generated HACS tree to the separately maintained `ha-fruit-forwarder`
-  repository only through the approved export workflow. Its release must point
-  back to the exact Fruit Forwarder source revision.
+- Run the guarded `Publish HACS distribution` workflow from the matching version
+  tag after creating the protected `hacs-release` environment and
+  `HACS_REPO_TOKEN` secret. Type `PUBLISH_HACS` and provide the destination
+  repository explicitly. The workflow replaces the destination only with the
+  deterministic export and records the exact Fruit Forwarder source revision;
+  it does not publish from a branch or a dirty checkout.
 - Submit the HACS repository first as a custom repository, then request default
   catalog inclusion once the required release and validation checks are live.
 - Publish `dist/mcp/server.json` with `mcp-publisher` only after the MCPB URL and

@@ -15,6 +15,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   fail-closed oversized-response handling.
 - Add protocol capability negotiation so calendar-enabled clients fail closed
   instead of silently losing calendar data with older HA integrations.
+- Add a guarded, tag-only workflow for publishing the generated HACS
+  distribution repository.
 - Add a redacted Home Assistant diagnostics surface for safe operational support.
 - Continue validating background EventKit permissions, upgrades, and reboot
   recovery on supported macOS installations.

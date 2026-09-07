@@ -1,0 +1,69 @@
+name: Publish HACS distribution
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type PUBLISH_HACS to update the generated HACS repository
+        required: true
+        type: string
+      hacs_repository:
+        description: owner/repository receiving the generated HACS tree
+        required: true
+        default: pdfowler/ha-fruit-forwarder
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: ${{ inputs.confirm == 'PUBLISH_HACS' && startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    environment: hacs-release
+    steps:
+      - name: Check out the tagged source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify the tag, version, and source history
+        run: |
+          version="$(tr -d '[:space:]' < release/VERSION)"
+          test "${GITHUB_REF_NAME}" = "v${version}"
+          test -z "$(git status --porcelain)"
+          test "${{ inputs.hacs_repository }}" != "${GITHUB_REPOSITORY}"
+          if git log --format='%an <%ae> | %cn <%ce>' | awk '$0 !~ /pfowler@icloud.com/ { found=1 } END { exit found ? 0 : 1 }'; then
+            echo "found a commit without pfowler@icloud.com author/committer attribution" >&2
+            exit 1
+          fi
+
+      - name: Validate the deterministic HACS export
+        run: |
+          scripts/check-hacs-export.sh
+          scripts/export-hacs.sh "$RUNNER_TEMP/ha-fruit-forwarder"
+
+      - name: Check out the HACS distribution repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.hacs_repository }}
+          token: ${{ secrets.HACS_REPO_TOKEN }}
+          path: hacs-repository
+          ref: main
+          fetch-depth: 0
+
+      - name: Replace the generated tree and commit the source revision
+        env:
+          HACS_REPOSITORY: ${{ inputs.hacs_repository }}
+        run: |
+          rsync -a --delete --exclude='.git/' "$RUNNER_TEMP/ha-fruit-forwarder/" hacs-repository/
+          version="$(tr -d '[:space:]' < release/VERSION)"
+          git -C hacs-repository config user.name "Fruit Forwarder Release Bot"
+          git -C hacs-repository config user.email "pfowler@icloud.com"
+          git -C hacs-repository add -A
+          if git -C hacs-repository diff --cached --quiet; then
+            echo "${HACS_REPOSITORY} already contains Fruit Forwarder ${version}"
+            exit 0
+          fi
+          git -C hacs-repository commit -m "Publish Fruit Forwarder ${version} from ${GITHUB_SHA}"
+          git -C hacs-repository push origin HEAD:main
