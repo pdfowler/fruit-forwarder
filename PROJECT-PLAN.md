@@ -10,7 +10,13 @@ The intended result is a useful, installable, maintainable product—not merely 
 
 This document remains the release plan and acceptance checklist. Its creation and the implementation work do not authorize publication, live deployments, account changes, new subscriptions, or destructive migrations.
 
-Baseline for the plan: standalone repository at commit `93b5271`, with the HA reconfiguration work and packaging/monorepo implementation now under review. Go, HA-runtime, metadata and deterministic-export checks are automated; live HA, macOS permissions, and remote publication state still require the acceptance evidence described below. No Git remote or public release is implied by this repository.
+The candidate source revision is recorded in `dist/release-manifest.json` and
+must remain an immutable clean checkout for each release preparation. The
+standalone repository now contains the HA reconfiguration and
+packaging/monorepo implementation. Go, HA-runtime, metadata, deterministic
+export and Git-attribution checks are automated; live HA, macOS permissions,
+and remote publication state still require the acceptance evidence described
+below. No Git remote or public release is implied by this repository.
 
 ## 2. Product definition
 
