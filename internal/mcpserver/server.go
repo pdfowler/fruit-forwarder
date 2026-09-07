@@ -64,12 +64,20 @@ type ItemOutput struct {
 }
 
 func Run(ctx context.Context, store ReminderStore, readOnly bool) error {
-	return newServer(store, readOnly).Run(ctx, &mcp.StdioTransport{})
+	return RunWithVersion(ctx, store, readOnly, "dev")
+}
+
+func RunWithVersion(ctx context.Context, store ReminderStore, readOnly bool, version string) error {
+	return newServerWithVersion(store, readOnly, version).Run(ctx, &mcp.StdioTransport{})
 }
 
 func newServer(store ReminderStore, readOnly bool) *mcp.Server {
+	return newServerWithVersion(store, readOnly, "dev")
+}
+
+func newServerWithVersion(store ReminderStore, readOnly bool, version string) *mcp.Server {
 	bridge := &Server{store: store}
-	server := mcp.NewServer(&mcp.Implementation{Name: "icloud-reminders", Version: "0.1.0"}, nil)
+	server := mcp.NewServer(&mcp.Implementation{Name: "fruit-forwarder", Version: version}, nil)
 	mcp.AddTool(server, &mcp.Tool{Name: "reminder_lists", Description: "List the EventKit reminder lists explicitly allowlisted for this bridge."}, bridge.lists)
 	mcp.AddTool(server, &mcp.Tool{Name: "reminders_list", Description: "List reminders in one allowlisted list. This never reads outside the configured list IDs."}, bridge.items)
 	if calendars, ok := store.(CalendarStore); ok && calendars.CalendarsEnabled() {

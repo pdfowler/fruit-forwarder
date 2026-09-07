@@ -10,7 +10,7 @@
         }
       },
       "user": {
-        "title": "Connect an iCloud Reminders bridge",
+        "title": "Connect Fruit Forwarder",
         "description": "Run `icloud-reminders-bridge pair` on the macOS bridge, then paste the copied token and the exact list IDs from `icloud-reminders-bridge discover`.",
         "data": {
           "name": "Name",

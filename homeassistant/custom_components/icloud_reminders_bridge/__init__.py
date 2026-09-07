@@ -1,4 +1,4 @@
-"""iCloud Reminders Bridge integration."""
+"""Fruit Forwarder Home Assistant integration."""
 
 from __future__ import annotations
 

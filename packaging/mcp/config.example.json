@@ -1,0 +1,13 @@
+{
+  "mcp_read_only": true,
+  "bridge_id": "mac",
+  "keychain_service": "com.example.icloud-reminders-bridge",
+  "keychain_account": "mac",
+  "completed_retention": "720h",
+  "lists": [
+    {"id": "EXACT-EVENTKIT-REMINDER-LIST-ID", "name": "Tasks"}
+  ],
+  "calendars": [
+    {"id": "EXACT-EVENTKIT-CALENDAR-ID", "name": "Personal"}
+  ]
+}

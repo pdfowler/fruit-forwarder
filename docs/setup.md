@@ -39,16 +39,36 @@ omit `home_assistant_url`; no HA token is needed.
 Copy the entire repository directory
 `homeassistant/custom_components/icloud_reminders_bridge` into
 `<your HA config directory>/custom_components/icloud_reminders_bridge`.
-Restart Home Assistant to load the custom integration. This repository does not
-currently provide HACS installation.
+Restart Home Assistant to load the custom integration. The repository's
+`task package:ha` target produces the HACS-compatible tree used by the planned
+`ha-fruit-forwarder` distribution repository. Until that repository is public,
+use the generated tree as the reviewed custom-component source rather than
+copying the monorepo's parent directory.
 
 ```sh
 "$bridge" check-config
 "$bridge" pair
 ```
 
-In HA, open Settings → Devices & services → Add integration → iCloud Reminders
-Bridge. Paste the token from the clipboard, use the same `bridge_id`, and enter
+Use the non-mutating diagnostics after an upgrade or reboot:
+
+```sh
+"$bridge" status --json
+"$bridge" doctor --json
+```
+
+`status` checks configuration and executable ownership without reading reminder
+contents. `doctor` additionally checks the Home Assistant pairing item in the
+login Keychain when HA sync is configured; neither command prints the token.
+
+Each installation keeps the previous executable pair under
+`~/Library/Application Support/icloud-reminders-bridge/rollback/`. If a new
+build fails its lifecycle check, stop the service and pass one of those exact
+directories to `scripts/rollback-macos.sh`; configuration, Keychain pairing and
+state are preserved.
+
+In HA, open Settings → Devices & services → Add integration → Fruit Forwarder.
+Paste the token from the clipboard, use the same `bridge_id`, and enter
 the exact list IDs, one per line. Add one integration entry for this pairing.
 The token is a persistent bearer secret, not a single-use code. Running `pair`
 again replaces the Mac's Keychain token; HA must then be configured to match.
@@ -103,3 +123,17 @@ Use a separate config file if different clients need different access policies.
 The MCP client may need its own Reminders permission. The server can establish
 a protocol session even when EventKit is unavailable; a successful handshake
 alone does not prove reminders can be read.
+
+### MCPB distribution
+
+On macOS, `task package:mcp` builds a self-contained MCPB containing the Go
+server and EventKit helper. Install that artifact only in an MCP host that
+supports MCPB/Desktop Extension packages, then point its required configuration
+file setting at a user-owned copy of `packaging/mcp/config.example.json` with
+the exact IDs discovered on that Mac. The MCPB path does not require Home
+Assistant or an HA token. The artifact is macOS-only and remains unsigned until
+maintainer signing credentials are supplied to the release workflow.
+
+`task package:macos` produces the companion versioned macOS tarball. These
+commands prepare artifacts only; publishing a GitHub release, HACS repository,
+or MCP Registry entry remains an explicit maintainer step.

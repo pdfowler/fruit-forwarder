@@ -20,6 +20,8 @@ from .const import (
     CONF_BRIDGE_ID,
     MAX_ITEMS,
     MAX_LISTS,
+    MAX_COMMANDS,
+    MAX_STRING_LENGTH,
     PROTOCOL_VERSION,
 )
 from .calendar_data import validate_calendars
@@ -198,8 +200,10 @@ class BridgeRuntime:
         applied = payload.get("applied_command_ids", [])
         if not isinstance(applied, list) or not all(
             isinstance(item, str) for item in applied
-        ):
-            raise ProtocolError("applied_command_ids must be an array of strings")
+        ) or len(applied) > MAX_COMMANDS:
+            raise ProtocolError("applied_command_ids must be a bounded array of strings")
+        if any(not item.strip() or len(item) > 256 for item in applied):
+            raise ProtocolError("applied command identifiers must be non-empty and bounded")
         return validated, set(applied)
 
     def _apply_optimistic(self, command: dict[str, Any]) -> None:
@@ -253,7 +257,7 @@ class BridgeRuntime:
 
 def _required_string(value: dict[str, Any], key: str) -> str:
     result = value.get(key)
-    if not isinstance(result, str) or not result.strip():
+    if not isinstance(result, str) or not result.strip() or len(result) > MAX_STRING_LENGTH:
         raise ProtocolError(f"{key} must be a non-empty string")
     return result
 
@@ -272,5 +276,7 @@ def _validate_item(value: Any) -> dict[str, Any]:
         if field_value is not None and not isinstance(field_value, str):
             raise ProtocolError(f"Reminder {field} must be a string or null")
         if field_value is not None:
+            if len(field_value) > MAX_STRING_LENGTH:
+                raise ProtocolError(f"Reminder {field} exceeds the supported size")
             result[field] = field_value
     return result

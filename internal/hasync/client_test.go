@@ -99,7 +99,7 @@ func (s *fakeReminderStore) ApplyCommand(_ context.Context, command model.Comman
 
 func TestSyncOnceUsesScopedWebhookAndAcknowledgesCommands(t *testing.T) {
 	t.Parallel()
-	const token = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	const token = "synthetic-webhook-token-for-unit-tests"
 	requestCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestCount++
@@ -160,5 +160,26 @@ func TestSyncOnceDoesNotReapplyPersistedCommand(t *testing.T) {
 	}
 	if applied != 0 || len(store.commands) != 0 {
 		t.Fatalf("persisted command was reapplied")
+	}
+}
+
+func TestPostSnapshotRejectsUnboundedOrUnsupportedCommands(t *testing.T) {
+	for _, command := range []model.Command{
+		{ID: "", Action: "complete", ListID: "list", Item: model.Item{UID: "item"}},
+		{ID: "cmd", Action: "delete", ListID: "list", Item: model.Item{UID: "item"}},
+		{ID: "cmd", Action: "complete", ListID: "list"},
+	} {
+		t.Run(command.Action+command.ID, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_ = json.NewEncoder(w).Encode(model.SyncResponse{Version: model.ProtocolVersion, Commands: []model.Command{command}})
+			}))
+			defer server.Close()
+			cfg := &config.Config{BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s"}
+			client := New(cfg, "token", &fakeReminderStore{}, &state.State{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			client.httpClient = server.Client()
+			if _, err := client.SyncOnce(context.Background()); err == nil {
+				t.Fatal("accepted invalid command")
+			}
+		})
 	}
 }

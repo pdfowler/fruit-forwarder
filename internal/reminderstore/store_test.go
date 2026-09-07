@@ -2,6 +2,7 @@ package reminderstore
 
 import (
 	"context"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -9,6 +10,25 @@ import (
 	"github.com/pdfowler/icloud-reminders-bridge/internal/config"
 	"github.com/pdfowler/icloud-reminders-bridge/internal/model"
 )
+
+func TestValidateHelperPathChecksExecutableSafety(t *testing.T) {
+	path := t.TempDir() + "/helper"
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateHelperPath(path); err != nil {
+		t.Fatalf("valid helper rejected: %v", err)
+	}
+	if err := os.Chmod(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateHelperPath(path); err != nil {
+		t.Fatalf("owner-executable helper rejected: %v", err)
+	}
+	if err := ValidateHelperPath(path + ".missing"); err == nil {
+		t.Fatal("missing helper accepted")
+	}
+}
 
 type fakeRunner struct {
 	lists    []model.List

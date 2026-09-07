@@ -1,0 +1,50 @@
+{
+  "manifest_version": "0.3",
+  "name": "fruit-forwarder-mcp",
+  "display_name": "Fruit Forwarder MCP",
+  "version": "@@VERSION@@",
+  "description": "Local, scoped MCP access to Apple Reminders and read-only Calendar data through macOS EventKit.",
+  "long_description": "Fruit Forwarder keeps Apple account access on the Mac and exposes only the configured reminder lists and calendars to a local MCP client. Reminders may be edited when the bridge configuration permits it; Calendar events are read-only.",
+  "author": {
+    "name": "Patrick Fowler",
+    "email": "pfowler@icloud.com",
+    "url": "https://github.com/pdfowler"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pdfowler/fruit-forwarder"
+  },
+  "homepage": "https://github.com/pdfowler/fruit-forwarder",
+  "documentation": "https://github.com/pdfowler/fruit-forwarder/blob/main/docs/setup.md",
+  "support": "https://github.com/pdfowler/fruit-forwarder/issues",
+  "icon": "brand/icon.png",
+  "license": "MIT",
+  "keywords": ["apple", "calendar", "eventkit", "icloud", "reminders"],
+  "compatibility": {
+    "platforms": ["darwin"]
+  },
+  "server": {
+    "type": "binary",
+    "entry_point": "server/fruit-forwarder-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/server/fruit-forwarder-mcp",
+      "args": [
+        "mcp",
+        "--config",
+        "${user_config.config_path}",
+        "--eventkit-helper",
+        "${__dirname}/server/icloud-reminders-eventkit"
+      ]
+    }
+  },
+  "tools_generated": true,
+  "user_config": {
+    "config_path": {
+      "type": "file",
+      "title": "Fruit Forwarder configuration file",
+      "description": "Absolute path to a user-owned bridge config JSON containing only the reminder lists and calendars this MCP client may access.",
+      "required": true,
+      "sensitive": false
+    }
+  }
+}

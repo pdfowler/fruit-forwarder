@@ -1,4 +1,4 @@
-# Calendar adapter (under development)
+# Calendar support
 
 The native helper, MCP, and HA integration support read-only event calendars.
 Real-account recurrence and background operation remain release validation work.

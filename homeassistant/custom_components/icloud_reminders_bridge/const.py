@@ -1,4 +1,4 @@
-"""Constants for the iCloud Reminders Bridge integration."""
+"""Constants for the Fruit Forwarder integration."""
 
 from homeassistant.const import Platform
 
@@ -14,3 +14,5 @@ CONF_ALLOWED_CALENDAR_IDS = "allowed_calendar_ids"
 MAX_PAYLOAD_BYTES = 1024 * 1024
 MAX_LISTS = 100
 MAX_ITEMS = 10000
+MAX_COMMANDS = 1000
+MAX_STRING_LENGTH = 4096

@@ -1,0 +1,18 @@
+name: Feature request
+description: Suggest a scoped improvement to the bridge.
+title: "[feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Explain the Home Assistant, MCP, or macOS user journey and any permission or security implications.
+    validations:
+      required: true

@@ -44,8 +44,8 @@ func TestCalendarResponseValidation(t *testing.T) {
 		calendars []model.Calendar
 		valid     bool
 	}{
-		{"valid_all_day", []model.Calendar{{ID: "allowed", Events: []model.Event{event}}}, true},
-		{"empty", []model.Calendar{{ID: "allowed"}}, true},
+		{"valid_all_day", []model.Calendar{{ID: "allowed", Name: "Events", Events: []model.Event{event}}}, true},
+		{"empty", []model.Calendar{{ID: "allowed", Name: "Events"}}, true},
 		{"missing_calendar", nil, false},
 		{"wrong_calendar", []model.Calendar{{ID: "outside"}}, false},
 		{"duplicate_event", []model.Calendar{{ID: "allowed", Events: []model.Event{event, event}}}, false},

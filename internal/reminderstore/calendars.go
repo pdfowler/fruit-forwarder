@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/pdfowler/icloud-reminders-bridge/internal/config"
 	"github.com/pdfowler/icloud-reminders-bridge/internal/model"
 )
 
@@ -52,6 +53,10 @@ func (s *Store) CalendarEvents(ctx context.Context, id, start, end string) ([]mo
 	if len(out.Calendars) != 1 || out.Calendars[0].ID != id {
 		return nil, errors.New("EventKit returned an unexpected calendar scope")
 	}
+	configured := s.calendar(id)
+	if configured == nil || out.Calendars[0].Name != configured.Name {
+		return nil, errors.New("configured calendar name changed or is unavailable")
+	}
 	items := out.Calendars[0].Events
 	if len(items) > 10000 {
 		return nil, errors.New("calendar snapshot exceeds 10000 events")
@@ -73,4 +78,13 @@ func (s *Store) CalendarEvents(ctx context.Context, id, start, end string) ([]mo
 		items = []model.Event{}
 	}
 	return items, nil
+}
+
+func (s *Store) calendar(id string) *config.List {
+	for index := range s.calendars {
+		if s.calendars[index].ID == id {
+			return &s.calendars[index]
+		}
+	}
+	return nil
 }

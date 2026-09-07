@@ -9,7 +9,16 @@ tasks:
     deps: [check]
 
   check:
-    deps: [format:check, test:go, test:ha, metadata:check]
+    deps: [format:check, test:go, test:ha, metadata:check, security:scan]
+
+  security:scan:
+    cmds:
+      - |
+        if command -v gitleaks >/dev/null 2>&1; then
+          gitleaks detect --no-banner --redact --log-opts='--all'
+        else
+          echo "gitleaks not installed; CI performs the authoritative history scan"
+        fi
 
   format:check:
     cmds:
@@ -17,7 +26,8 @@ tasks:
       - python3 -m json.tool config.example.json >/dev/null
       - python3 -m json.tool homeassistant/custom_components/icloud_reminders_bridge/manifest.json >/dev/null
       - python3 -m json.tool release/compatibility.json >/dev/null
-      - bash -n scripts/install-macos.sh scripts/export-hacs.sh scripts/render-mcp-server-json.sh
+      - bash -n scripts/install-macos.sh scripts/rollback-macos.sh scripts/export-hacs.sh scripts/render-mcp-server-json.sh
+      - bash -n scripts/package-macos.sh scripts/package-mcpb.sh scripts/check-hacs-export.sh
 
   test:go:
     cmds:
@@ -41,8 +51,15 @@ tasks:
   metadata:check:
     cmds:
       - test "$(cat release/VERSION)" = "$(python3 -c 'import json; print(json.load(open("release/compatibility.json"))["mac_application_version"])')"
+      - test "$(cat release/VERSION)" = "$(python3 -c 'import json; print(json.load(open("release/compatibility.json"))["mcp_server_version"])')"
+      - test "$(cat release/VERSION)" = "$(python3 -c 'import json; print(json.load(open("release/compatibility.json"))["home_assistant_integration_version"])')"
+      - test "$(cat release/VERSION)" = "$(python3 -c 'import json; print(json.load(open("homeassistant/custom_components/icloud_reminders_bridge/manifest.json"))["version"])')"
+      - test "$(cat release/VERSION)" = "$(python3 -c 'import plistlib; print(plistlib.load(open("deployment/Info.plist", "rb"))["CFBundleShortVersionString"])')"
       - python3 -m json.tool hacs.json >/dev/null
       - python3 -m json.tool packaging/mcp/server.json.in >/dev/null
+      - python3 -m json.tool packaging/mcp/manifest.json.in >/dev/null
+      - python3 -m json.tool packaging/mcp/config.example.json >/dev/null
+      - python3 -c 'import ast; ast.parse(open("scripts/render-release-manifest.py").read())'
 
   package:ha:
     deps: [metadata:check]
@@ -52,15 +69,17 @@ tasks:
   package:macos:
     platforms: [darwin]
     cmds:
-      - mkdir -p dist/macos
-      - go build -trimpath -ldflags "-X main.version={{.VERSION}}" -o dist/macos/icloud-reminders-bridge ./cmd/icloud-reminders-bridge
-      - task: test:native
+      - scripts/package-macos.sh {{.VERSION}}
 
   package:mcp:
     platforms: [darwin]
-    deps: [package:macos]
     cmds:
-      - echo "MCPB assembly is release-specific; use packaging/mcp/README.md and render-mcp-server-json.sh after publishing the immutable artifact."
+      - scripts/package-mcpb.sh {{.VERSION}}
+      - |
+        checksum="$(awk '{print $1}' "dist/mcp/fruit-forwarder-mcp-{{.VERSION}}.mcpb.sha256")"
+        scripts/render-mcp-server-json.sh "{{.VERSION}}" \
+          "https://github.com/pdfowler/fruit-forwarder/releases/download/v{{.VERSION}}/fruit-forwarder-mcp-{{.VERSION}}.mcpb" \
+          "${checksum}"
 
   release:check:
     deps: [check, package:ha]
@@ -68,3 +87,17 @@ tasks:
       - test -f dist/ha-fruit-forwarder/custom_components/icloud_reminders_bridge/manifest.json
       - test -f dist/ha-fruit-forwarder/brand/icon.png
       - scripts/check-hacs-export.sh
+
+  release:prepare:
+    deps: [release:check]
+    cmds:
+      - |
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+          task package:macos
+          task package:mcp
+        else
+          echo "macOS artifacts skipped on $(uname -s); run release:prepare on macOS for the complete candidate"
+        fi
+      - |
+        mkdir -p dist
+        python3 scripts/render-release-manifest.py

@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SERVICE_LABEL="com.example.icloud-reminders-bridge"
+INSTALL_DIR="${HOME}/Library/Application Support/icloud-reminders-bridge"
+BIN_DIR="${INSTALL_DIR}/bin"
+ROLLBACK_DIR="${INSTALL_DIR}/rollback"
+BRIDGE_BIN="${BIN_DIR}/icloud-reminders-bridge"
+EVENTKIT_BIN="${BIN_DIR}/icloud-reminders-eventkit"
+PLIST_PATH="${HOME}/Library/LaunchAgents/${SERVICE_LABEL}.plist"
+
+if [[ $# -ne 1 ]]; then
+  echo "usage: $0 /path/to/rollback/<version-timestamp>" >&2
+  echo "available rollback directories:" >&2
+  find "${ROLLBACK_DIR}" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | sort >&2 || true
+  exit 2
+fi
+
+backup="$1"
+case "${backup}" in
+  "${ROLLBACK_DIR}"/*) ;;
+  *) echo "rollback path must be inside ${ROLLBACK_DIR}" >&2; exit 2 ;;
+esac
+[[ -d "${backup}" ]] || { echo "rollback directory not found: ${backup}" >&2; exit 2; }
+[[ -f "${backup}/icloud-reminders-bridge" && -f "${backup}/icloud-reminders-eventkit" ]] || {
+  echo "rollback directory does not contain both bridge executables" >&2
+  exit 2
+}
+
+STAGE_BRIDGE="${BIN_DIR}/.rollback-icloud-reminders-bridge.new"
+STAGE_EVENTKIT="${BIN_DIR}/.rollback-icloud-reminders-eventkit.new"
+install -m 0755 "${backup}/icloud-reminders-bridge" "${STAGE_BRIDGE}"
+install -m 0755 "${backup}/icloud-reminders-eventkit" "${STAGE_EVENTKIT}"
+codesign --verify --strict "${STAGE_EVENTKIT}"
+mv "${STAGE_BRIDGE}" "${BRIDGE_BIN}"
+if ! mv "${STAGE_EVENTKIT}" "${EVENTKIT_BIN}"; then
+  # The staged bridge is the only file changed so far. Restore the current
+  # pair from the same rollback target before returning an error.
+  cp -p "${backup}/icloud-reminders-bridge" "${BRIDGE_BIN}"
+  echo "failed to switch the EventKit helper; restored the previous executable pair" >&2
+  exit 1
+fi
+
+if [[ -f "${PLIST_PATH}" ]]; then
+  launchctl bootout "gui/${UID}/${SERVICE_LABEL}" 2>/dev/null || true
+  for _ in {1..20}; do
+    if ! launchctl print "gui/${UID}/${SERVICE_LABEL}" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.25
+  done
+  launchctl bootstrap "gui/${UID}" "${PLIST_PATH}"
+  launchctl kickstart -k "gui/${UID}/${SERVICE_LABEL}"
+fi
+
+echo "Rolled back executables from ${backup}. Configuration, Keychain and state were preserved."

@@ -125,6 +125,12 @@ func validateExecutable(path string) error {
 	return nil
 }
 
+// ValidateHelperPath applies the same ownership and permission checks used
+// before any EventKit request. It is exposed for non-invasive diagnostics.
+func ValidateHelperPath(path string) error {
+	return validateExecutable(path)
+}
+
 func (s *Store) ValidateLists(ctx context.Context) error {
 	output, err := s.runner.Run(ctx, request{Action: "lists"})
 	if err != nil {

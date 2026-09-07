@@ -1,4 +1,4 @@
-"""Config flow for iCloud Reminders Bridge."""
+"""Config flow for Fruit Forwarder."""
 
 from __future__ import annotations
 
@@ -86,7 +86,7 @@ class ICloudRemindersBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_ALLOWED_CALENDAR_IDS, default=""): selector.TextSelector(
                     selector.TextSelectorConfig(multiline=True)
                 ),
-                vol.Required(CONF_NAME, default="iCloud Reminders Bridge"): str,
+                vol.Required(CONF_NAME, default="Fruit Forwarder"): str,
                 vol.Required(CONF_BRIDGE_ID, default="mac"): str,
                 vol.Required(CONF_PAIRING_TOKEN): selector.TextSelector(
                     selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)

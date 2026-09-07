@@ -63,7 +63,7 @@ class ICloudReminderTodoEntity(TodoListEntity):
         self._attr_device_info = {
             "identifiers": {(DOMAIN, runtime.entry.entry_id)},
             "name": runtime.entry.title,
-            "manufacturer": "iCloud Reminders Bridge",
+            "manufacturer": "Fruit Forwarder",
             "model": "EventKit bridge",
         }
         self.async_refresh_from_runtime(write_state=False)

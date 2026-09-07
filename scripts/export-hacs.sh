@@ -5,15 +5,27 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 out_dir="${1:-${repo_dir}/dist/ha-fruit-forwarder}"
 component="${repo_dir}/homeassistant/custom_components/icloud_reminders_bridge"
 
+case "${out_dir}" in
+  ""|"/"|"."|"..")
+    echo "refusing an unsafe HACS export path: ${out_dir}" >&2
+    exit 2
+    ;;
+esac
 rm -rf "$out_dir"
 mkdir -p "$out_dir/custom_components"
 cp -R "$component" "$out_dir/custom_components/"
 cp "$repo_dir/hacs.json" "$out_dir/hacs.json"
 cp "$repo_dir/README-HACS.md" "$out_dir/README.md"
 cp "$repo_dir/LICENSE" "$out_dir/LICENSE"
+if [[ -d "$repo_dir/packaging/hacs/.github" ]]; then
+  cp -R "$repo_dir/packaging/hacs/.github" "$out_dir/.github"
+fi
 if [[ -d "$repo_dir/brand" ]]; then
   cp -R "$repo_dir/brand" "$out_dir/brand"
 fi
+# Never ship interpreter caches created by local HA tests.
+find "$out_dir" -type d -name '__pycache__' -prune -exec rm -rf {} +
+find "$out_dir" -type f -name '*.pyc' -delete
 
 python3 - "$out_dir" <<'PY'
 import json
@@ -31,5 +43,8 @@ if manifest["domain"] != "icloud_reminders_bridge":
     raise SystemExit("unexpected integration domain")
 if not (root / "brand" / "icon.png").is_file():
     raise SystemExit("brand/icon.png is required for HACS export")
+for workflow in ("validate.yml", "hassfest.yml"):
+    if not (root / ".github" / "workflows" / workflow).is_file():
+        raise SystemExit(f"missing HACS release workflow: {workflow}")
 print(f"validated HACS export: {root}")
 PY

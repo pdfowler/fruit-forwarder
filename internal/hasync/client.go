@@ -19,6 +19,8 @@ import (
 )
 
 const maxResponseBytes = 1 << 20
+const maxCommands = 1000
+const maxCommandString = 256
 
 type ReminderStore interface {
 	Snapshot(context.Context) ([]model.List, error)
@@ -27,6 +29,7 @@ type ReminderStore interface {
 
 type Client struct {
 	cfg        *config.Config
+	version    string
 	token      string
 	store      ReminderStore
 	state      *state.State
@@ -35,13 +38,17 @@ type Client struct {
 }
 
 func New(cfg *config.Config, token string, store ReminderStore, bridgeState *state.State, logger *slog.Logger) *Client {
+	return NewWithVersion(cfg, token, store, bridgeState, logger, "dev")
+}
+
+func NewWithVersion(cfg *config.Config, token string, store ReminderStore, bridgeState *state.State, logger *slog.Logger, version string) *Client {
 	httpClient := &http.Client{
 		Timeout: 20 * time.Second,
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}
-	return &Client{cfg: cfg, token: token, store: store, state: bridgeState, httpClient: httpClient, logger: logger}
+	return &Client{cfg: cfg, version: version, token: token, store: store, state: bridgeState, httpClient: httpClient, logger: logger}
 }
 
 func (c *Client) Run(ctx context.Context) error {
@@ -138,7 +145,7 @@ func (c *Client) postSnapshot(ctx context.Context, lists []model.List) (*model.S
 		return nil, fmt.Errorf("create sync request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "icloud-reminders-bridge/0.1")
+	req.Header.Set("User-Agent", fmt.Sprintf("fruit-forwarder/%s", c.version))
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		// net/http wraps failures with the request URL, which contains our token.
@@ -167,5 +174,46 @@ func (c *Client) postSnapshot(ctx context.Context, lists []model.List) (*model.S
 	if result.Version != model.ProtocolVersion {
 		return nil, fmt.Errorf("unsupported sync protocol version %d", result.Version)
 	}
+	if len(result.Commands) > maxCommands {
+		return nil, fmt.Errorf("sync response contains too many commands")
+	}
+	for _, command := range result.Commands {
+		if c.state.Has(command.ID) {
+			continue
+		}
+		if err := validateCommand(command); err != nil {
+			return nil, fmt.Errorf("invalid Home Assistant command: %w", err)
+		}
+	}
 	return &result, nil
+}
+
+func validateCommand(command model.Command) error {
+	if !boundedCommandString(command.ID) || !boundedCommandString(command.ListID) {
+		return errors.New("command id and list_id must be non-empty and bounded")
+	}
+	switch command.Action {
+	case "create":
+		if strings.TrimSpace(command.Item.Summary) == "" {
+			return errors.New("create command requires a summary")
+		}
+	case "update":
+		if !boundedCommandString(command.Item.UID) || strings.TrimSpace(command.Item.Summary) == "" {
+			return errors.New("update command requires a uid and summary")
+		}
+	case "complete", "reopen":
+		if !boundedCommandString(command.Item.UID) {
+			return errors.New("completion command requires a uid")
+		}
+	default:
+		return fmt.Errorf("unsupported action %q", command.Action)
+	}
+	if len(command.Item.Summary) > maxCommandString || len(command.Item.Description) > 4096 || len(command.Item.Due) > maxCommandString {
+		return errors.New("command item fields exceed supported limits")
+	}
+	return nil
+}
+
+func boundedCommandString(value string) bool {
+	return strings.TrimSpace(value) != "" && len(value) <= maxCommandString
 }

@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a reproducible Fruit Forwarder problem without private household data.
+title: "[bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not attach pairing tokens, Apple account details, reminder contents, EventKit identifiers, or private logs.
+  - type: input
+    id: version
+    attributes:
+      label: Fruit Forwarder version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: macOS and architecture
+      placeholder: macOS 15.x, Apple silicon
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version (if applicable)
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Include the smallest reproduction and whether the failure affects reminders, calendars, HA, or MCP.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics
+      description: Paste output from `status` or `doctor --json` after removing paths, IDs, URLs, and household data.

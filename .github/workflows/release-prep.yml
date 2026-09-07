@@ -32,29 +32,29 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
       - name: Build versioned bridge
+        run: scripts/package-macos.sh "$(tr -d '[:space:]' < release/VERSION)"
+      - name: Build MCPB bundle
+        run: scripts/package-mcpb.sh "$(tr -d '[:space:]' < release/VERSION)"
+      - name: Render MCP Registry metadata for the planned release URL
         run: |
           version="$(tr -d '[:space:]' < release/VERSION)"
-          mkdir -p dist/macos
-          go build -trimpath -ldflags "-X main.version=${version}" \
-            -o dist/macos/icloud-reminders-bridge ./cmd/icloud-reminders-bridge
-          dist/macos/icloud-reminders-bridge version
-      - name: Build and sign EventKit helper
-        run: |
-          mkdir -p dist/native
-          swiftc -O -parse-as-library eventkit-helper/main.swift \
-            -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
-            -Xlinker "$PWD/deployment/eventkit-helper-Info.plist" \
-            -o dist/native/icloud-reminders-eventkit
-          codesign --force --sign - --options runtime \
-            --identifier com.example.icloud-reminders-bridge.eventkit \
-            --entitlements deployment/reminders.entitlements \
-            dist/native/icloud-reminders-eventkit
-          codesign --verify --strict dist/native/icloud-reminders-eventkit
+          checksum="$(awk '{print $1}' "dist/mcp/fruit-forwarder-mcp-${version}.mcpb.sha256")"
+          scripts/render-mcp-server-json.sh "$version" \
+            "https://github.com/pdfowler/fruit-forwarder/releases/download/v${version}/fruit-forwarder-mcp-${version}.mcpb" \
+            "$checksum"
+      - name: Record release provenance and hashes
+        run: python3 scripts/render-release-manifest.py
       - uses: actions/upload-artifact@v4
         with:
           name: fruit-forwarder-macos-unsigned
-          path: dist/macos
+          path: |
+            dist/macos
+            dist/mcp
+            dist/release-manifest.json

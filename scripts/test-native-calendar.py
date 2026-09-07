@@ -1,11 +1,15 @@
 """Validate native calendar request boundaries without requesting account access."""
 
 import json
+import os
 import subprocess
 import unittest
 from pathlib import Path
 
-BINARY = Path(__file__).resolve().parents[1] / "build/icloud-reminders-eventkit"
+BINARY = Path(os.environ.get(
+    "FRUIT_FORWARDER_EVENTKIT_BINARY",
+    str(Path(__file__).resolve().parents[1] / "build/icloud-reminders-eventkit"),
+))
 
 
 class CalendarBoundaryTests(unittest.TestCase):

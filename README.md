@@ -62,6 +62,10 @@ for Home Assistant and local MCP configuration.
    ./scripts/install-macos.sh
    ```
 
+After a reboot or upgrade, `icloud-reminders-bridge doctor --json` checks the
+configured helper and (when HA sync is enabled) the pairing Keychain item
+without reading reminder contents.
+
 The pairing token is stored in the macOS login Keychain. Do not commit the
 runtime config, state file, logs, or token.
 
@@ -89,8 +93,10 @@ the common cross-target commands:
 ```sh
 task check          # Go, HA, metadata and script checks
 task package:ha    # build dist/ha-fruit-forwarder for HACS review
-task package:macos # build versioned Go and native artifacts on macOS
+task package:macos # build a versioned macOS tarball on macOS
+task package:mcp   # build the macOS MCPB and candidate registry metadata
 task release:check # validate a reproducible candidate without publishing
+task release:prepare # assemble every target available on this host
 ```
 
 The MCP registry metadata is intentionally rendered only after a versioned MCPB

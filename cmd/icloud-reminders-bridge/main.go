@@ -53,12 +53,20 @@ func run() error {
 	}
 	flags := flag.NewFlagSet(command, flag.ContinueOnError)
 	configPath := flags.String("config", config.DefaultPath(), "path to bridge config")
+	eventKitHelper := flags.String("eventkit-helper", "", "override the EventKit helper executable path")
+	jsonOutput := flags.Bool("json", false, "format status or doctor output as JSON")
 	if err := flags.Parse(os.Args[2:]); err != nil {
 		return err
 	}
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		return err
+	}
+	if *eventKitHelper != "" {
+		cfg.EventKitHelper = *eventKitHelper
+	}
+	if command == "status" || command == "doctor" {
+		return reportStatus(cfg, *configPath, command == "doctor", *jsonOutput)
 	}
 	if command == "pair" {
 		return pair(cfg)
@@ -80,7 +88,7 @@ func run() error {
 	defer cancel()
 	switch command {
 	case "mcp":
-		return mcpserver.Run(ctx, store, cfg.MCPReadOnly)
+		return mcpserver.RunWithVersion(ctx, store, cfg.MCPReadOnly, version)
 	case "sync-once", "serve":
 		if cfg.HomeAssistantURL == "" {
 			return errors.New("home_assistant_url is required for Home Assistant sync")
@@ -99,7 +107,7 @@ func run() error {
 		}
 		defer releaseLock()
 		logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
-		client := hasync.New(cfg, token, store, bridgeState, logger)
+		client := hasync.NewWithVersion(cfg, token, store, bridgeState, logger, version)
 		if command == "sync-once" {
 			_, err = client.SyncOnce(ctx)
 			return err
@@ -108,6 +116,63 @@ func run() error {
 	default:
 		return usageError()
 	}
+}
+
+type statusReport struct {
+	Version              string `json:"version"`
+	ConfigPath           string `json:"config_path"`
+	BridgeID             string `json:"bridge_id"`
+	HomeAssistantEnabled bool   `json:"home_assistant_enabled"`
+	EventKitHelper       string `json:"eventkit_helper"`
+	EventKitReady        bool   `json:"eventkit_ready"`
+	KeychainReady        *bool  `json:"keychain_ready,omitempty"`
+	StatePath            string `json:"state_path"`
+}
+
+func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) error {
+	report := statusReport{
+		Version:              version,
+		ConfigPath:           configPath,
+		BridgeID:             cfg.BridgeID,
+		HomeAssistantEnabled: cfg.HomeAssistantURL != "",
+		EventKitHelper:       cfg.EventKitPath(),
+		EventKitReady:        reminderstore.ValidateHelperPath(cfg.EventKitPath()) == nil,
+		StatePath:            cfg.StatePath,
+	}
+	if deep && cfg.HomeAssistantURL != "" {
+		_, keychainErr := keychain.Load(cfg.KeychainService, cfg.KeychainAccount)
+		ready := keychainErr == nil
+		report.KeychainReady = &ready
+	}
+	if jsonOutput {
+		encoder := json.NewEncoder(os.Stdout)
+		encoder.SetIndent("", "  ")
+		if err := encoder.Encode(report); err != nil {
+			return err
+		}
+	} else {
+		fmt.Printf("Fruit Forwarder %s\n", report.Version)
+		fmt.Printf("  configuration: %s\n", report.ConfigPath)
+		fmt.Printf("  EventKit helper: %s (%s)\n", report.EventKitHelper, readiness(report.EventKitReady))
+		fmt.Printf("  Home Assistant sync: %s\n", readiness(report.HomeAssistantEnabled))
+		if report.KeychainReady != nil {
+			fmt.Printf("  pairing Keychain item: %s\n", readiness(*report.KeychainReady))
+		}
+	}
+	if !report.EventKitReady {
+		return errors.New("doctor: EventKit helper is missing, unsafe, or not executable")
+	}
+	if deep && report.KeychainReady != nil && !*report.KeychainReady {
+		return errors.New("doctor: Home Assistant pairing token is not available in Keychain")
+	}
+	return nil
+}
+
+func readiness(value bool) string {
+	if value {
+		return "ready"
+	}
+	return "not ready"
 }
 
 func discover() error {
@@ -151,5 +216,5 @@ func pair(cfg *config.Config) error {
 }
 
 func usageError() error {
-	return errors.New("usage: icloud-reminders-bridge <version|discover|discover-calendars|pair|check-config|sync-once|serve|mcp> [--config path]")
+	return errors.New("usage: icloud-reminders-bridge <version|discover|discover-calendars|pair|status|doctor|check-config|sync-once|serve|mcp> [--config path] [--eventkit-helper path] [--json]")
 }
