@@ -53,7 +53,7 @@ def validate_calendars(raw, allowed):
                     raise ValueError("Event metadata must be strings")
             parse = date.fromisoformat if event["all_day"] else instant
             a, b = parse(event["start"]), parse(event["end"])
-            if b < a or (event["all_day"] and b == a):
+            if b <= a:
                 raise ValueError("Invalid event interval")
             clean.append({key: event[key] for key in (
                 "uid", "summary", "start", "end", "all_day", "description", "location", "time_zone"

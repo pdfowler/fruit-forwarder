@@ -50,7 +50,9 @@ class BridgeCalendar(CalendarEntity):
     def extra_state_attributes(self):
         calendar = self.runtime.calendars.get(self.uid, {})
         return {"window_start": calendar.get("window_start"),
-                "window_end": calendar.get("window_end"), "last_sync": self.runtime.last_sync}
+                "window_end": calendar.get("window_end"),
+                "last_sync": self.runtime.last_sync,
+                "calendar_last_sync": self.runtime.calendar_last_sync}
 
     def _events(self):
         result = []

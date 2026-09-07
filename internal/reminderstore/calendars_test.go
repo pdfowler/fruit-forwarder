@@ -49,6 +49,7 @@ func TestCalendarResponseValidation(t *testing.T) {
 		{"missing_calendar", nil, false},
 		{"wrong_calendar", []model.Calendar{{ID: "outside"}}, false},
 		{"duplicate_event", []model.Calendar{{ID: "allowed", Events: []model.Event{event, event}}}, false},
+		{"zero_length_event", []model.Calendar{{ID: "allowed", Events: []model.Event{{UID: "zero", Start: "2026-01-03", End: "2026-01-03", AllDay: true}}}}, false},
 		{"invalid_dates", []model.Calendar{{ID: "allowed", Events: []model.Event{{UID: "bad", Start: "bad", End: "bad"}}}}, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

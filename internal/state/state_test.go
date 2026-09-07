@@ -1,8 +1,10 @@
 package state
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -28,10 +30,42 @@ func TestStateBoundsAppliedLedger(t *testing.T) {
 	t.Parallel()
 	state := &State{}
 	for i := 0; i < maxAppliedCommands+10; i++ {
-		state.MarkApplied(string(rune(i)))
+		state.MarkApplied(fmt.Sprintf("command-%d", i))
 	}
 	if len(state.AppliedCommandIDs) != maxAppliedCommands {
 		t.Fatalf("got %d ledger entries", len(state.AppliedCommandIDs))
+	}
+}
+
+func TestStateRejectsMalformedLedger(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "state.json")
+	if err := os.WriteFile(path, []byte(`{"applied_command_ids":["ok","ok"]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(path); err == nil {
+		t.Fatal("duplicate applied command identifiers accepted")
+	}
+	if err := os.WriteFile(path, []byte(`{"applied_command_ids":["   "]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(path); err == nil {
+		t.Fatal("blank applied command identifier accepted")
+	}
+	if err := os.WriteFile(path, []byte(`{"applied_command_ids":["`+strings.Repeat("x", maxCommandIDLength+1)+`"]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(path); err == nil {
+		t.Fatal("oversized applied command identifier accepted")
+	}
+}
+
+func TestStateSaveRejectsOversizedLedger(t *testing.T) {
+	t.Parallel()
+	state := &State{AppliedCommandIDs: make([]string, maxAppliedCommands+1)}
+	if err := state.Save(filepath.Join(t.TempDir(), "state.json")); err == nil {
+		t.Fatal("oversized ledger saved")
 	}
 }
 

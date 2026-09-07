@@ -68,11 +68,11 @@ async def test_failed_ack_save_preserves_pending_command(tmp_path):
     bridge = runtime(tmp_path)
     await bridge.async_process_snapshot(snapshot())
     command_id = await bridge.async_queue_command("complete", "allowed", {"uid": "item"})
-    previous = deepcopy((bridge.lists, bridge.commands, bridge.last_sync))
+    previous = deepcopy((bridge.lists, bridge.commands, bridge.last_sync, bridge.calendars, bridge.calendar_last_sync))
     bridge._store.async_save.side_effect = OSError("disk full")
     with pytest.raises(OSError):
         await bridge.async_process_snapshot(snapshot("completed", [command_id]))
-    assert (bridge.lists, bridge.commands, bridge.last_sync) == previous
+    assert (bridge.lists, bridge.commands, bridge.last_sync, bridge.calendars, bridge.calendar_last_sync) == previous
 
 
 @pytest.mark.asyncio
@@ -137,3 +137,52 @@ async def test_revoked_pending_edit_is_not_returned_by_next_snapshot(tmp_path):
     assert response["commands"] == []
     assert bridge.commands == []
     assert bridge.lists == {}
+
+
+def test_calendar_validation_rejects_zero_length_event():
+    from custom_components.icloud_reminders_bridge.calendar_data import validate_calendars
+
+    with pytest.raises(ValueError, match="Invalid event interval"):
+        validate_calendars(
+            [{
+                "id": "calendar",
+                "name": "Calendar",
+                "window_start": "2026-01-01T00:00:00+00:00",
+                "window_end": "2026-02-01T00:00:00+00:00",
+                "events": [{
+                    "uid": "zero",
+                    "summary": "Zero",
+                    "start": "2026-01-03",
+                    "end": "2026-01-03",
+                    "all_day": True,
+                }],
+            }],
+            {"calendar"},
+        )
+
+
+@pytest.mark.asyncio
+async def test_calendar_snapshot_is_retained_when_bridge_omits_calendar_data(tmp_path):
+    bridge = runtime(tmp_path)
+    bridge.entry.data["allowed_calendar_ids"] = ["calendar"]
+    complete = snapshot()
+    complete["calendars"] = [{
+        "id": "calendar",
+        "name": "Calendar",
+        "window_start": "2026-01-01T00:00:00+00:00",
+        "window_end": "2026-02-01T00:00:00+00:00",
+        "events": [{
+            "uid": "event",
+            "summary": "Meeting",
+            "start": "2026-01-03T10:00:00+00:00",
+            "end": "2026-01-03T11:00:00+00:00",
+            "all_day": False,
+        }],
+    }]
+    await bridge.async_process_snapshot(complete)
+    first_sync = bridge.calendar_last_sync
+    assert bridge.calendars["calendar"]["events"][0]["uid"] == "event"
+
+    await bridge.async_process_snapshot(snapshot())
+    assert bridge.calendars["calendar"]["events"][0]["uid"] == "event"
+    assert bridge.calendar_last_sync == first_sync

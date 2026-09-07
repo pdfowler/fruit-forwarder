@@ -54,6 +54,7 @@ class BridgeRuntime:
         self.calendars: dict[str, dict[str, Any]] = {}
         self.commands: list[dict[str, Any]] = []
         self.last_sync: str | None = None
+        self.calendar_last_sync: str | None = None
 
     async def async_load(self) -> None:
         """Restore the last confirmed snapshot and pending commands."""
@@ -75,6 +76,7 @@ class BridgeRuntime:
             if isinstance(item, dict) and item.get("list_id") in allowed_ids
         ]
         self.last_sync = stored.get("last_sync")
+        self.calendar_last_sync = stored.get("calendar_last_sync")
         if (len(self.lists) != len(stored.get("lists", []))
                 or len(self.commands) != len(stored.get("commands", []))
                 or len(self.calendars) != len(stored.get("calendars", []))):
@@ -99,12 +101,16 @@ class BridgeRuntime:
         """Validate and store a bridge snapshot, then return queued edits."""
         lists, applied_ids = self._validate_snapshot(payload)
         try:
-            calendars = validate_calendars(payload.get("calendars", []),
-                set(self.entry.data.get(CONF_ALLOWED_CALENDAR_IDS, [])))
+            calendars = None
+            if "calendars" in payload:
+                calendars = validate_calendars(payload.get("calendars", []),
+                    set(self.entry.data.get(CONF_ALLOWED_CALENDAR_IDS, [])))
         except ValueError as err:
             raise ProtocolError(str(err)) from err
         async with self._transaction():
-            self.calendars = calendars
+            if calendars is not None:
+                self.calendars = calendars
+                self.calendar_last_sync = datetime.now(UTC).isoformat()
             allowed_ids = set(self.entry.data[CONF_ALLOWED_LIST_IDS])
             self.commands = [
                 command for command in self.commands
@@ -237,12 +243,12 @@ class BridgeRuntime:
     async def _transaction(self):
         """Publish mutations only after storage succeeds; rollback failed saves."""
         async with self._lock:
-            previous = deepcopy((self.lists, self.commands, self.last_sync, self.calendars))
+            previous = deepcopy((self.lists, self.commands, self.last_sync, self.calendars, self.calendar_last_sync))
             try:
                 yield
                 await self._async_save()
             except BaseException:
-                self.lists, self.commands, self.last_sync, self.calendars = previous
+                self.lists, self.commands, self.last_sync, self.calendars, self.calendar_last_sync = previous
                 raise
 
     async def _async_save(self) -> None:
@@ -252,6 +258,7 @@ class BridgeRuntime:
                 "calendars": list(self.calendars.values()),
                 "commands": self.commands,
                 "last_sync": self.last_sync,
+                "calendar_last_sync": self.calendar_last_sync,
             }
         )
 

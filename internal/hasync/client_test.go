@@ -41,6 +41,12 @@ func (s *calendarSyncStore) CalendarEvents(_ context.Context, id, start, end str
 	return []model.Event{}, nil
 }
 
+type failingCalendarStore struct{ fakeReminderStore }
+
+func (*failingCalendarStore) CalendarEvents(context.Context, string, string, string) ([]model.Event, error) {
+	return nil, errors.New("calendar permission unavailable")
+}
+
 func TestCalendarSnapshotSync(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var payload model.Snapshot
@@ -62,6 +68,32 @@ func TestCalendarSnapshotSync(t *testing.T) {
 	}
 	if !store.called {
 		t.Fatal("calendar adapter not called")
+	}
+}
+
+func TestCalendarFailureDoesNotBlockReminderPublication(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload model.Snapshot
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Error(err)
+		}
+		if len(payload.Lists) != 1 || payload.Calendars != nil {
+			t.Errorf("calendar failure should omit calendars but retain reminders: %+v", payload)
+		}
+		_ = json.NewEncoder(w).Encode(model.SyncResponse{Version: model.ProtocolVersion})
+	}))
+	defer server.Close()
+	store := &failingCalendarStore{fakeReminderStore: fakeReminderStore{
+		items: []model.List{{ID: "list", Name: "Tasks"}},
+	}}
+	cfg := &config.Config{
+		BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s",
+		Calendars: []config.List{{ID: "events", Name: "Events"}},
+	}
+	client := New(cfg, "synthetic", store, &state.State{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	client.httpClient = server.Client()
+	if _, err := client.SyncOnce(context.Background()); err != nil {
+		t.Fatalf("reminder sync failed when calendar read failed: %v", err)
 	}
 }
 

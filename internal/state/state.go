@@ -6,18 +6,34 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 // Acquire prevents two bridge processes from applying the same HA command at
 // once. The returned function releases the advisory lock.
 func Acquire(path string) (func(), error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	directory := filepath.Dir(path)
+	if err := os.MkdirAll(directory, 0o700); err != nil {
 		return nil, fmt.Errorf("create lock directory: %w", err)
 	}
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
+	if err := validatePrivateDirectory(directory); err != nil {
+		return nil, fmt.Errorf("lock directory: %w", err)
+	}
+	fd, err := unix.Open(path, unix.O_CREAT|unix.O_RDWR|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("open state lock: %w", err)
+	}
+	file := os.NewFile(uintptr(fd), path)
+	if file == nil {
+		_ = unix.Close(fd)
+		return nil, errors.New("open state lock: invalid file descriptor")
+	}
+	if err := validateExistingPath(path); err != nil {
+		_ = file.Close()
+		return nil, fmt.Errorf("state lock: %w", err)
 	}
 	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
 		file.Close()
@@ -30,6 +46,7 @@ func Acquire(path string) (func(), error) {
 }
 
 const maxAppliedCommands = 1000
+const maxCommandIDLength = 256
 
 type State struct {
 	AppliedCommandIDs []string `json:"applied_command_ids"`
@@ -52,6 +69,9 @@ func Load(path string) (*State, error) {
 	var result State
 	if err := json.Unmarshal(data, &result); err != nil {
 		return nil, fmt.Errorf("parse state: %w", err)
+	}
+	if err := validate(&result); err != nil {
+		return nil, fmt.Errorf("validate state: %w", err)
 	}
 	return &result, nil
 }
@@ -76,6 +96,9 @@ func (s *State) MarkApplied(id string) {
 }
 
 func (s *State) Save(path string) error {
+	if err := validate(s); err != nil {
+		return fmt.Errorf("validate state: %w", err)
+	}
 	directory := filepath.Dir(path)
 	if err := os.MkdirAll(directory, 0o700); err != nil {
 		return fmt.Errorf("create state directory: %w", err)
@@ -109,6 +132,26 @@ func (s *State) Save(path string) error {
 	}
 	if err := os.Rename(tmpName, path); err != nil {
 		return fmt.Errorf("replace state: %w", err)
+	}
+	return nil
+}
+
+func validate(s *State) error {
+	if s == nil {
+		return errors.New("state is nil")
+	}
+	if len(s.AppliedCommandIDs) > maxAppliedCommands {
+		return fmt.Errorf("applied command ledger exceeds %d entries", maxAppliedCommands)
+	}
+	seen := make(map[string]struct{}, len(s.AppliedCommandIDs))
+	for _, id := range s.AppliedCommandIDs {
+		if strings.TrimSpace(id) == "" || len(id) > maxCommandIDLength {
+			return errors.New("applied command identifiers must be non-empty and bounded")
+		}
+		if _, exists := seen[id]; exists {
+			return fmt.Errorf("duplicate applied command identifier %q", id)
+		}
+		seen[id] = struct{}{}
 	}
 	return nil
 }

@@ -109,22 +109,35 @@ func (c *Client) SyncOnce(ctx context.Context) (int, error) {
 }
 
 func (c *Client) postSnapshot(ctx context.Context, lists []model.List) (*model.SyncResponse, error) {
-	calendars := make([]model.Calendar, 0, len(c.cfg.Calendars))
+	// A nil calendar slice is intentional: omitting calendars tells the HA
+	// runtime to retain its last known calendar snapshot when a calendar read
+	// fails. Reminder publication must not be blocked by an independent
+	// Calendar permission or EventKit failure.
+	var calendars []model.Calendar
 	if len(c.cfg.Calendars) > 0 {
 		reader, ok := c.store.(interface {
 			CalendarEvents(context.Context, string, string, string) ([]model.Event, error)
 		})
 		if !ok {
-			return nil, errors.New("calendar reader is unavailable")
-		}
-		now := time.Now().UTC()
-		start, end := now.Add(-30*24*time.Hour).Format(time.RFC3339), now.Add(90*24*time.Hour).Format(time.RFC3339)
-		for _, calendar := range c.cfg.Calendars {
-			events, err := reader.CalendarEvents(ctx, calendar.ID, start, end)
-			if err != nil {
-				return nil, fmt.Errorf("read configured calendar: %w", err)
+			c.logger.Warn("calendar sync unavailable; publishing reminders without replacing the cached calendar snapshot")
+		} else {
+			now := time.Now().UTC()
+			start, end := now.Add(-30*24*time.Hour).Format(time.RFC3339), now.Add(90*24*time.Hour).Format(time.RFC3339)
+			candidate := make([]model.Calendar, 0, len(c.cfg.Calendars))
+			calendarErr := false
+			for _, calendar := range c.cfg.Calendars {
+				events, err := reader.CalendarEvents(ctx, calendar.ID, start, end)
+				if err != nil {
+					calendarErr = true
+					break
+				}
+				candidate = append(candidate, model.Calendar{ID: calendar.ID, Name: calendar.Name, Events: events, WindowStart: start, WindowEnd: end})
 			}
-			calendars = append(calendars, model.Calendar{ID: calendar.ID, Name: calendar.Name, Events: events, WindowStart: start, WindowEnd: end})
+			if calendarErr {
+				c.logger.Warn("calendar sync failed; publishing reminders without replacing the cached calendar snapshot")
+			} else {
+				calendars = candidate
+			}
 		}
 	}
 	payload := model.Snapshot{

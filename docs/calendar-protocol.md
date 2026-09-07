@@ -14,9 +14,13 @@ HA publishes one read-only calendar entity per calendar received. The rolling
 snapshot covers 30 days in the past and 90 days ahead, refreshed with each sync.
 Queries outside the stored window return an explicit error. MCP callers can
 request their own windows of up to 366 days. Calendar-only configurations can
-use an empty reminder `lists` array. Calendar read failure currently fails that
-sync cycle, including reminder publication; independent sync lanes remain a
-possible improvement.
+use an empty reminder `lists` array. If a calendar read fails, the bridge still
+publishes reminder changes and omits the `calendars` field for that snapshot.
+HA retains the last confirmed calendar snapshot and exposes its last successful
+calendar sync timestamp as `calendar_last_sync`; a later successful calendar
+read replaces the cache. This keeps a Calendar permission or EventKit outage
+from blocking Reminders while making the cached nature of the calendar view
+visible to dashboards.
 
 Existing HA entries can add or remove calendars through the integration's
 Reconfigure action; entry identity, pairing, and reminder entities are retained.

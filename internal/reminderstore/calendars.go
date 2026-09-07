@@ -69,7 +69,7 @@ func (s *Store) CalendarEvents(ctx context.Context, id, start, end string) ([]mo
 		}
 		a, aerr := time.Parse(layout, item.Start)
 		b, berr := time.Parse(layout, item.End)
-		if item.UID == "" || seen[item.UID] || aerr != nil || berr != nil || b.Before(a) {
+		if item.UID == "" || seen[item.UID] || aerr != nil || berr != nil || !b.After(a) {
 			return nil, errors.New("EventKit returned an invalid or duplicate event")
 		}
 		seen[item.UID] = true

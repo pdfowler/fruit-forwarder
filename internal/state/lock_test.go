@@ -1,6 +1,7 @@
 package state
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -30,4 +31,20 @@ func TestAcquireReleasesLock(t *testing.T) {
 		t.Fatal(err)
 	}
 	second()
+}
+
+func TestLockRejectsSymlink(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "target")
+	if err := os.WriteFile(target, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "lock")
+	if err := os.Symlink(target, link); err != nil {
+		t.Fatal(err)
+	}
+	if release, err := Acquire(link); err == nil {
+		release()
+		t.Fatal("symlinked lock accepted")
+	}
 }
