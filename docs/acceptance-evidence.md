@@ -97,6 +97,19 @@ background service health.
 - The inspection was read-only. No todo item, integration, permission,
   configuration, or service state was changed.
 
+### Legacy configuration audit (2026-09-07)
+
+- The legacy configuration is mode `0600`, contains one configured reminder
+  list, and has no calendar scope. Its existing bridge, Keychain and state
+  path fields are present and can be preserved by the packaged migration path;
+  their values were not recorded here.
+- The candidate schema adds an independent `calendars` scope while retaining
+  the existing `lists` shape. This supports a reminders-only migration first,
+  followed by an explicit calendar opt-in rather than silently broadening
+  access.
+- This was a key/shape audit only. No configuration, Keychain item, state file,
+  permission, or service was changed.
+
 ## Installed acceptance record template
 
 Create one redacted record per run, for example under a maintainer-controlled
