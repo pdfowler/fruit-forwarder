@@ -131,6 +131,18 @@ background service health.
 - This was a key/shape audit only. No configuration, Keychain item, state file,
   permission, or service was changed.
 
+### Live gate refresh (2026-09-07 14:44 PDT)
+
+- The approved HA-MCP healthcheck is ready (`ha-mcp 8.4.3`, 78 tools). A
+  read-only integration query still finds one loaded
+  `icloud_reminders_bridge` entry titled `iCloud Reminders on Dean` with
+  `supports_reconfigure: false`.
+- `com.pdfowler.fruitforwarder` is not loaded in the Dean user launch domain.
+  The legacy `net.pdfowler.icloud-reminders-bridge` LaunchAgent remains the
+  only active writer and still invokes the old `launchctl asuser` arrangement.
+- This refresh was read-only. No HA entry, service, permission, Keychain item,
+  configuration, or household data was changed.
+
 ## Installed acceptance record template
 
 Create one redacted record per run, for example under a maintainer-controlled
