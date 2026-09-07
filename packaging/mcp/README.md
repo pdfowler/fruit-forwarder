@@ -21,7 +21,9 @@ task package:mcp
 This uses the pinned `@anthropic-ai/mcpb` CLI (or `MCPB_BIN`), validates the
 MCPB manifest, emits `dist/mcp/fruit-forwarder-mcp-<version>.mcpb`, and writes a
 SHA-256 sidecar plus a candidate `server.json` using the planned GitHub release
-URL. It does not publish the artifact or registry metadata. For a signed release
+URL. `scripts/check-mcp-package.sh` then verifies the bundle manifest, sidecar,
+and rendered Registry metadata agree. It does not publish the artifact or
+registry metadata. For a signed release
 candidate, set `MCPB_CERT` and `MCPB_KEY` to maintainer-managed certificate and
 key files outside the repository. The script asks the MCPB CLI to verify the
 signature and fails closed if the certificate is not trusted by the build host;

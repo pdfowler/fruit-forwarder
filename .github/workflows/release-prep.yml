@@ -23,10 +23,13 @@ jobs:
           python3 -m json.tool packaging/mcp/server.json.in >/dev/null
           scripts/export-hacs.sh "$RUNNER_TEMP/ha-fruit-forwarder"
           scripts/check-hacs-export.sh
+          scripts/package-ha.sh "$(tr -d '[:space:]' < release/VERSION)"
       - uses: actions/upload-artifact@v4
         with:
           name: ha-fruit-forwarder
-          path: ${{ runner.temp }}/ha-fruit-forwarder
+          path: |
+            ${{ runner.temp }}/ha-fruit-forwarder
+            dist/ha
 
   macos-build:
     runs-on: macos-latest
@@ -49,6 +52,7 @@ jobs:
           scripts/render-mcp-server-json.sh "$version" \
             "https://github.com/pdfowler/fruit-forwarder/releases/download/v${version}/fruit-forwarder-mcp-${version}.mcpb" \
             "$checksum"
+          scripts/check-mcp-package.sh "$version"
       - name: Record release provenance and hashes
         run: python3 scripts/render-release-manifest.py
       - uses: actions/upload-artifact@v4

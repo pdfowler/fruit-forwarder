@@ -21,7 +21,7 @@ def main() -> None:
     output = args.output or root / "dist/release-manifest.json"
 
     artifacts: list[dict[str, object]] = []
-    for directory in (root / "dist/macos", root / "dist/mcp"):
+    for directory in (root / "dist/ha", root / "dist/macos", root / "dist/mcp"):
         if not directory.is_dir():
             continue
         for path in sorted(directory.iterdir()):

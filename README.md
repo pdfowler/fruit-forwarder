@@ -92,7 +92,7 @@ the common cross-target commands:
 
 ```sh
 task check          # Go, HA, metadata and script checks
-task package:ha    # build dist/ha-fruit-forwarder for HACS review
+task package:ha    # build the HACS tree and versioned HA archive
 task package:macos # build a versioned macOS tarball on macOS
 task package:mcp   # build the macOS MCPB and candidate registry metadata
 task release:check # validate a reproducible candidate without publishing
