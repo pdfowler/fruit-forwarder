@@ -110,6 +110,7 @@ task test           # Go, HA, and native EventKit tests when running on macOS
 task package:ha    # build the HACS tree and versioned HA archive
 task package:macos # build a versioned macOS tarball on macOS
 task package:mcp   # build the macOS MCPB and candidate registry metadata
+task install:local PACKAGE=dist/macos/fruit-forwarder-macos-0.1.0.tar.gz
 task release:check # build/validate every target available on this host
 task release:prepare # record the verified candidate manifest
 ```
@@ -119,6 +120,12 @@ artifact has been built and hashed; see [packaging/mcp/README.md](packaging/mcp/
 No publishing command is implicit in a build or release check.
 Maintainer publication gates and the HACS/MCP follow-up steps are documented in
 [docs/publishing.md](docs/publishing.md).
+
+`task install:local` is an explicit macOS action. It verifies a packaged
+archive and its checksum before extracting it into a temporary directory and
+running the package installer. Add `INSTALL_ONLY=true` to stage binaries
+without activating launchd, or `MIGRATE_HOME_CTRL=true` when intentionally
+preparing the known legacy configuration migration.
 
 The macOS tarball is self-installing: extract it, copy the exact IDs into the
 included configuration, and run `scripts/install-package-macos.sh`. The source

@@ -30,7 +30,7 @@ tasks:
       - python3 -m json.tool config.example.json >/dev/null
       - python3 -m json.tool homeassistant/custom_components/icloud_reminders_bridge/manifest.json >/dev/null
       - python3 -m json.tool release/compatibility.json >/dev/null
-      - bash -n scripts/install-macos.sh scripts/install-package-macos.sh scripts/uninstall-macos.sh scripts/rollback-macos.sh scripts/export-hacs.sh scripts/render-mcp-server-json.sh scripts/check-identifiers.sh scripts/check-git-attribution.sh
+      - bash -n scripts/install-macos.sh scripts/install-package-macos.sh scripts/install-artifact-macos.sh scripts/uninstall-macos.sh scripts/rollback-macos.sh scripts/export-hacs.sh scripts/render-mcp-server-json.sh scripts/check-identifiers.sh scripts/check-git-attribution.sh
       - bash -n scripts/package-ha.sh scripts/package-macos.sh scripts/package-mcpb.sh scripts/check-hacs-export.sh scripts/check-ha-package.sh scripts/check-macos-package.sh scripts/check-mcp-package.sh
 
   test:go:
@@ -101,6 +101,16 @@ tasks:
           "https://github.com/pdfowler/fruit-forwarder/releases/download/v{{.VERSION}}/fruit-forwarder-mcp-{{.VERSION}}.mcpb" \
           "${checksum}"
       - scripts/check-mcp-package.sh {{.VERSION}}
+
+  install:local:
+    platforms: [darwin]
+    requires:
+      vars: [PACKAGE]
+    cmds:
+      - >-
+        scripts/install-artifact-macos.sh "{{.PACKAGE}}"
+        {{if .INSTALL_ONLY}}--install-only{{end}}
+        {{if .MIGRATE_HOME_CTRL}}--migrate-home-ctrl{{end}}
 
   release:check:
     deps: [check, package:ha]
