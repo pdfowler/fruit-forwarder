@@ -63,6 +63,17 @@ func TestStateRejectsMalformedLedger(t *testing.T) {
 	}
 }
 
+func TestStateRejectsOversizedFile(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "state.json")
+	if err := os.WriteFile(path, make([]byte, maxStateBytes+1), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(path); err == nil {
+		t.Fatal("oversized state file accepted")
+	}
+}
+
 func TestStateSaveRejectsOversizedLedger(t *testing.T) {
 	t.Parallel()
 	state := &State{AppliedCommandIDs: make([]string, maxAppliedCommands+1)}

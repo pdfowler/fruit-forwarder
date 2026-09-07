@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,6 +50,7 @@ func Acquire(path string) (func(), error) {
 
 const maxAppliedCommands = 1000
 const maxCommandIDLength = 256
+const maxStateBytes = 512 * 1024
 
 type State struct {
 	AppliedCommandIDs []string       `json:"applied_command_ids"`
@@ -62,12 +64,20 @@ func Load(path string) (*State, error) {
 	if err := validateExistingPath(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("state file: %w", err)
 	}
-	data, err := os.ReadFile(path)
+	file, err := os.Open(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return &State{}, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("read state: %w", err)
+	}
+	defer file.Close()
+	data, err := io.ReadAll(io.LimitReader(file, maxStateBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("read state: %w", err)
+	}
+	if len(data) > maxStateBytes {
+		return nil, fmt.Errorf("state exceeds %d bytes", maxStateBytes)
 	}
 	var result State
 	if err := json.Unmarshal(data, &result); err != nil {
@@ -136,11 +146,23 @@ func (s *State) Save(path string) error {
 		tmp.Close()
 		return err
 	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return fmt.Errorf("sync state temp file: %w", err)
+	}
 	if err := tmp.Close(); err != nil {
 		return err
 	}
 	if err := os.Rename(tmpName, path); err != nil {
 		return fmt.Errorf("replace state: %w", err)
+	}
+	directoryFile, err := os.Open(directory)
+	if err != nil {
+		return fmt.Errorf("open state directory for sync: %w", err)
+	}
+	defer directoryFile.Close()
+	if err := directoryFile.Sync(); err != nil {
+		return fmt.Errorf("sync state directory: %w", err)
 	}
 	return nil
 }
