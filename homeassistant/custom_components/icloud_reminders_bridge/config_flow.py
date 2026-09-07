@@ -25,31 +25,50 @@ class ICloudRemindersBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
-        """Change scope while preserving pairing and entity identity."""
+        """Change scope or rotate the pairing token in place."""
         entry = self._get_reconfigure_entry()
         errors: dict[str, str] = {}
         if user_input is not None:
             lists = _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_LIST_IDS, ""))
             calendars = _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_CALENDAR_IDS, ""))
-            if not lists and not calendars:
+            token = user_input.get(CONF_PAIRING_TOKEN, "").strip()
+            if token and not TOKEN_PATTERN.fullmatch(token):
+                errors[CONF_PAIRING_TOKEN] = "invalid_token"
+            elif not lists and not calendars:
                 errors["base"] = "no_lists"
             else:
+                data_updates = {
+                    CONF_ALLOWED_LIST_IDS: lists,
+                    CONF_ALLOWED_CALENDAR_IDS: calendars,
+                }
+                update_kwargs: dict[str, Any] = {"data_updates": data_updates}
+                if token:
+                    data_updates[CONF_PAIRING_TOKEN] = token
+                    update_kwargs["unique_id"] = hashlib.sha256(token.encode()).hexdigest()
                 return self.async_update_reload_and_abort(
                     entry,
-                    data_updates={CONF_ALLOWED_LIST_IDS: lists, CONF_ALLOWED_CALENDAR_IDS: calendars},
+                    **update_kwargs,
                 )
         defaults = user_input if user_input is not None else {
             CONF_ALLOWED_LIST_IDS: "\n".join(entry.data.get(CONF_ALLOWED_LIST_IDS, [])),
             CONF_ALLOWED_CALENDAR_IDS: "\n".join(entry.data.get(CONF_ALLOWED_CALENDAR_IDS, [])),
+            CONF_PAIRING_TOKEN: "",
         }
         return self.async_show_form(
             step_id="reconfigure", errors=errors,
-            data_schema=vol.Schema({
-                vol.Required(key, default=defaults.get(key, "")): selector.TextSelector(
-                    selector.TextSelectorConfig(multiline=True)
-                )
-                for key in (CONF_ALLOWED_LIST_IDS, CONF_ALLOWED_CALENDAR_IDS)
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_PAIRING_TOKEN, default=""): selector.TextSelector(
+                        selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
+                    ),
+                    **{
+                        vol.Required(key, default=defaults.get(key, "")): selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)
+                        )
+                        for key in (CONF_ALLOWED_LIST_IDS, CONF_ALLOWED_CALENDAR_IDS)
+                    },
+                }
+            ),
         )
 
     async def async_step_user(
@@ -58,11 +77,19 @@ class ICloudRemindersBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle the initial setup form."""
         errors: dict[str, str] = {}
         if user_input is not None:
+            name = user_input[CONF_NAME].strip()
+            bridge_id = user_input[CONF_BRIDGE_ID].strip()
             token = user_input[CONF_PAIRING_TOKEN].strip()
             allowed_list_ids = _parse_allowed_list_ids(
                 user_input[CONF_ALLOWED_LIST_IDS]
             )
-            if not TOKEN_PATTERN.fullmatch(token):
+            if not name:
+                errors[CONF_NAME] = "invalid_name"
+            elif not bridge_id:
+                errors[CONF_BRIDGE_ID] = "invalid_bridge_id"
+            elif _bridge_id_in_use(self, bridge_id):
+                errors["base"] = "already_configured"
+            elif not TOKEN_PATTERN.fullmatch(token):
                 errors[CONF_PAIRING_TOKEN] = "invalid_token"
             elif not allowed_list_ids and not _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_CALENDAR_IDS, "")):
                 errors[CONF_ALLOWED_LIST_IDS] = "no_lists"
@@ -112,3 +139,13 @@ def _parse_allowed_list_ids(value: str) -> list[str]:
             list_ids.append(list_id)
             seen.add(list_id)
     return list_ids
+
+
+def _bridge_id_in_use(flow: ICloudRemindersBridgeConfigFlow, bridge_id: str) -> bool:
+    """Reject a second config entry for the same native bridge identity."""
+    if flow.hass is None:
+        return False
+    return any(
+        entry.data.get(CONF_BRIDGE_ID) == bridge_id
+        for entry in flow.hass.config_entries.async_entries(DOMAIN)
+    )

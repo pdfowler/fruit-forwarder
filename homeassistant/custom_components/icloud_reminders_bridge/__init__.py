@@ -11,7 +11,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import (
-    CONF_PAIRING_TOKEN,
     DOMAIN,
     MAX_PAYLOAD_BYTES,
     PLATFORMS,
@@ -52,7 +51,7 @@ async def async_setup_entry(
         hass,
         DOMAIN,
         entry.title,
-        entry.data[CONF_PAIRING_TOKEN],
+        runtime.webhook_token,
         handle_webhook,
         local_only=True,
         allowed_methods={"POST"},
@@ -67,5 +66,5 @@ async def async_unload_entry(
     """Unload the bridge and its scoped webhook."""
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
-        webhook.async_unregister(hass, entry.data[CONF_PAIRING_TOKEN])
+        webhook.async_unregister(hass, entry.runtime_data.webhook_token)
     return unloaded

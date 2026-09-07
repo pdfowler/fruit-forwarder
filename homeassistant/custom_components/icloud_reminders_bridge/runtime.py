@@ -17,6 +17,7 @@ from homeassistant.helpers.storage import Store
 from .const import (
     CONF_ALLOWED_CALENDAR_IDS,
     CONF_ALLOWED_LIST_IDS,
+    CONF_PAIRING_TOKEN,
     CONF_BRIDGE_ID,
     MAX_ITEMS,
     MAX_LISTS,
@@ -39,6 +40,11 @@ class BridgeRuntime:
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.hass = hass
         self.entry = entry
+        # Keep the token used for webhook registration stable for the lifetime
+        # of this runtime. During a reconfigure/reload HA may update
+        # entry.data before unloading the old runtime; using entry.data during
+        # unload would leave the old webhook registered after token rotation.
+        self.webhook_token = entry.data.get(CONF_PAIRING_TOKEN, "")
         self._store: Store[dict[str, Any]] = Store(
             hass, 1, f"icloud_reminders_bridge.{entry.entry_id}"
         )

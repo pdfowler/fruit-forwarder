@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/pdfowler/icloud-reminders-bridge/internal/config"
 )
 
 // This crosses the real CLI/stdio/helper-process boundary, using synthetic
@@ -105,5 +106,25 @@ func TestStdioProcess(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func TestDiscoveryUsesConfiguredHelperPath(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.json")
+	helperPath := filepath.Join(dir, "configured-helper")
+	configData := []byte(`{"bridge_id":"mac","eventkit_helper_path":"` + helperPath + `","lists":[]}`)
+	if err := os.WriteFile(configPath, configData, 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := discoveryHelperPath(configPath, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != helperPath {
+		t.Fatalf("helper path = %q, want %q", got, helperPath)
+	}
+	if got, err := discoveryHelperPath(filepath.Join(dir, "missing.json"), ""); err != nil || got != config.DefaultEventKitHelperPath() {
+		t.Fatalf("missing config discovery = %q, %v", got, err)
 	}
 }

@@ -3,8 +3,9 @@
     "step": {
       "reconfigure": {
         "title": "Change allowed reminder lists and calendars",
-        "description": "Enter exact EventKit IDs, one per line. Match these with the Mac configuration. Removed lists lose their queued edits. Pairing and existing entity identities are preserved.",
+        "description": "Enter exact EventKit IDs, one per line. Match these with the Mac configuration. Removed lists lose their queued edits. Pairing and existing entity identities are preserved. Paste a replacement token only when rotating pairing.",
         "data": {
+          "pairing_token": "Replacement pairing token (optional)",
           "allowed_list_ids": "Allowed reminder list IDs",
           "allowed_calendar_ids": "Allowed calendar IDs"
         }
@@ -23,6 +24,8 @@
     },
     "error": {
       "invalid_token": "The pairing token is not a valid 256-bit bridge token.",
+      "invalid_name": "Enter a name for this bridge.",
+      "invalid_bridge_id": "Enter the stable bridge identifier from the Mac configuration.",
       "no_lists": "Enter at least one exact EventKit reminder list or calendar ID."
     },
     "abort": {

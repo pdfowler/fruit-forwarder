@@ -39,24 +39,28 @@ func run() error {
 		fmt.Println(version)
 		return nil
 	}
-	if command == "discover-calendars" {
-		calendars, err := reminderstore.DiscoverCalendars(context.Background(), config.DefaultEventKitHelperPath())
-		if err != nil {
-			return err
-		}
-		encoder := json.NewEncoder(os.Stdout)
-		encoder.SetIndent("", "  ")
-		return encoder.Encode(calendars)
-	}
-	if command == "discover" {
-		return discover()
-	}
 	flags := flag.NewFlagSet(command, flag.ContinueOnError)
 	configPath := flags.String("config", config.DefaultPath(), "path to bridge config")
 	eventKitHelper := flags.String("eventkit-helper", "", "override the EventKit helper executable path")
 	jsonOutput := flags.Bool("json", false, "format status or doctor output as JSON")
 	if err := flags.Parse(os.Args[2:]); err != nil {
 		return err
+	}
+	if command == "discover" || command == "discover-calendars" {
+		helperPath, err := discoveryHelperPath(*configPath, *eventKitHelper)
+		if err != nil {
+			return err
+		}
+		if command == "discover-calendars" {
+			calendars, err := reminderstore.DiscoverCalendars(context.Background(), helperPath)
+			if err != nil {
+				return err
+			}
+			encoder := json.NewEncoder(os.Stdout)
+			encoder.SetIndent("", "  ")
+			return encoder.Encode(calendars)
+		}
+		return discover(helperPath)
 	}
 	cfg, err := config.Load(*configPath)
 	if err != nil {
@@ -175,14 +179,28 @@ func readiness(value bool) string {
 	return "not ready"
 }
 
-func discover() error {
-	lists, err := reminderstore.Discover(context.Background(), config.DefaultEventKitHelperPath())
+func discover(helperPath string) error {
+	lists, err := reminderstore.Discover(context.Background(), helperPath)
 	if err != nil {
 		return err
 	}
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(lists)
+}
+
+func discoveryHelperPath(configPath, override string) (string, error) {
+	if override != "" {
+		return override, nil
+	}
+	cfg, err := config.Load(configPath)
+	if err == nil {
+		return cfg.EventKitPath(), nil
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return config.DefaultEventKitHelperPath(), nil
+	}
+	return "", fmt.Errorf("load config for discovery: %w", err)
 }
 
 func pair(cfg *config.Config) error {
