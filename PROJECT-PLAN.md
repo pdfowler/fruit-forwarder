@@ -329,7 +329,7 @@ Design a separate milestone for authenticated network transport: supported MCP a
 - Add body and output bounds at every parser, not only at the HA HTTP handler. Fuzz narrow protocol validators where valuable.
 - Validate TLS, redirect rejection and the effective `local_only` boundary under supported reverse-proxy configurations.
 - Define privacy for HA snapshots, queued commands, recorder data, Mac state, logs and backups. Filtering a snapshot is not historical deletion.
-- Produce opt-in redacted diagnostics with a preview. Never upload household data automatically.
+- Home Assistant now exposes opt-in diagnostics containing only redacted configuration flags, counts and synchronization timestamps; it never includes credentials, identifiers or household contents. Keep the preview and installed-client review in the acceptance matrix.
 - Audit dependency licenses, vulnerabilities and update policy; harden CI permissions and release credentials.
 
 **Done when:** each threat has a mitigation or explicit documented limitation, testable controls have tests, and public security claims have evidence.

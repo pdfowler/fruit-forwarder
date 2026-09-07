@@ -15,6 +15,7 @@ choices.
 Release history is tracked in [CHANGELOG.md](CHANGELOG.md).
 The release gate is tracked in [docs/acceptance-evidence.md](docs/acceptance-evidence.md).
 Mutation and recovery semantics are documented in [docs/command-lifecycle.md](docs/command-lifecycle.md).
+Home Assistant's diagnostics download reports only redacted operational counts and timestamps; it excludes credentials and household contents.
 
 ## Security boundary
 
