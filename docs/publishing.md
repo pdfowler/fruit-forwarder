@@ -17,7 +17,8 @@ Before running it:
    versioned roots, required files, checksums, and absence of unexpected links
    or interpreter caches. The macOS archive is assembled with normalized
    metadata and is byte-for-byte reproducible when its staged binaries are
-   unchanged.
+   unchanged; the unsigned MCPB ZIP receives the same timestamp/order
+   normalization before any optional signature is applied.
 4. Complete the real Mac/HA/MCP acceptance matrix in `PROJECT-PLAN.md`,
    including disposable reminders/calendars and rollback evidence.
 5. Confirm the GitHub repository namespace, release signing/notarization policy,

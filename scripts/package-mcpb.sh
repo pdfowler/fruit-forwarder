@@ -70,6 +70,7 @@ chmod 0755 "${staging}/server/fruit-forwarder-mcp" "${staging}/server/icloud-rem
 
 "${mcpb[@]}" validate "${staging}/manifest.json"
 "${mcpb[@]}" pack "${staging}" "${output}"
+python3 "${repo_dir}/scripts/normalize-zip.py" "${output}"
 if [[ -n "${MCPB_CERT:-}" || -n "${MCPB_KEY:-}" ]]; then
   if [[ -z "${MCPB_CERT:-}" || -z "${MCPB_KEY:-}" ]]; then
     echo "MCPB_CERT and MCPB_KEY must be provided together" >&2

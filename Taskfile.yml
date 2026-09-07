@@ -74,6 +74,7 @@ tasks:
       - python3 -c 'import ast; ast.parse(open("scripts/render-launchagent.py").read())'
       - python3 -c 'import ast; ast.parse(open("scripts/package-hacs.py").read())'
       - python3 -c 'import ast; ast.parse(open("scripts/package-tar.py").read())'
+      - python3 -c 'import ast; ast.parse(open("scripts/normalize-zip.py").read())'
 
   package:ha:
     deps: [metadata:check]
