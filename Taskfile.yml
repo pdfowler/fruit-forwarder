@@ -1,0 +1,70 @@
+version: '3'
+
+vars:
+  VERSION:
+    sh: "tr -d '[:space:]' < release/VERSION"
+
+tasks:
+  default:
+    deps: [check]
+
+  check:
+    deps: [format:check, test:go, test:ha, metadata:check]
+
+  format:check:
+    cmds:
+      - test -z "$(gofmt -l $(find cmd internal -name '*.go' -type f))"
+      - python3 -m json.tool config.example.json >/dev/null
+      - python3 -m json.tool homeassistant/custom_components/icloud_reminders_bridge/manifest.json >/dev/null
+      - python3 -m json.tool release/compatibility.json >/dev/null
+      - bash -n scripts/install-macos.sh scripts/export-hacs.sh scripts/render-mcp-server-json.sh
+
+  test:go:
+    cmds:
+      - go test -race ./...
+      - go vet ./...
+
+  test:ha:
+    cmds:
+      - test -x .venv/bin/python
+      - .venv/bin/python -m pytest -q
+
+  test:native:
+    platforms: [darwin]
+    cmds:
+      - mkdir -p dist/native
+      - swiftc -O -parse-as-library eventkit-helper/main.swift -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist -Xlinker "$(pwd)/deployment/eventkit-helper-Info.plist" -o dist/native/icloud-reminders-eventkit
+      - codesign --force --sign - --options runtime --identifier com.example.icloud-reminders-bridge.eventkit --entitlements deployment/reminders.entitlements dist/native/icloud-reminders-eventkit
+      - codesign --verify --strict dist/native/icloud-reminders-eventkit
+      - python3 scripts/test-native-calendar.py
+
+  metadata:check:
+    cmds:
+      - test "$(cat release/VERSION)" = "$(python3 -c 'import json; print(json.load(open("release/compatibility.json"))["mac_application_version"])')"
+      - python3 -m json.tool hacs.json >/dev/null
+      - python3 -m json.tool packaging/mcp/server.json.in >/dev/null
+
+  package:ha:
+    deps: [metadata:check]
+    cmds:
+      - scripts/export-hacs.sh
+
+  package:macos:
+    platforms: [darwin]
+    cmds:
+      - mkdir -p dist/macos
+      - go build -trimpath -ldflags "-X main.version={{.VERSION}}" -o dist/macos/icloud-reminders-bridge ./cmd/icloud-reminders-bridge
+      - task: test:native
+
+  package:mcp:
+    platforms: [darwin]
+    deps: [package:macos]
+    cmds:
+      - echo "MCPB assembly is release-specific; use packaging/mcp/README.md and render-mcp-server-json.sh after publishing the immutable artifact."
+
+  release:check:
+    deps: [check, package:ha]
+    cmds:
+      - test -f dist/ha-fruit-forwarder/custom_components/icloud_reminders_bridge/manifest.json
+      - test -f dist/ha-fruit-forwarder/brand/icon.png
+      - scripts/check-hacs-export.sh

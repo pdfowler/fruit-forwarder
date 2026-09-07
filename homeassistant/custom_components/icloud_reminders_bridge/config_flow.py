@@ -22,6 +22,36 @@ class ICloudRemindersBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Change scope while preserving pairing and entity identity."""
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            lists = _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_LIST_IDS, ""))
+            calendars = _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_CALENDAR_IDS, ""))
+            if not lists and not calendars:
+                errors["base"] = "no_lists"
+            else:
+                return self.async_update_reload_and_abort(
+                    entry,
+                    data_updates={CONF_ALLOWED_LIST_IDS: lists, CONF_ALLOWED_CALENDAR_IDS: calendars},
+                )
+        defaults = user_input if user_input is not None else {
+            CONF_ALLOWED_LIST_IDS: "\n".join(entry.data.get(CONF_ALLOWED_LIST_IDS, [])),
+            CONF_ALLOWED_CALENDAR_IDS: "\n".join(entry.data.get(CONF_ALLOWED_CALENDAR_IDS, [])),
+        }
+        return self.async_show_form(
+            step_id="reconfigure", errors=errors,
+            data_schema=vol.Schema({
+                vol.Required(key, default=defaults.get(key, "")): selector.TextSelector(
+                    selector.TextSelectorConfig(multiline=True)
+                )
+                for key in (CONF_ALLOWED_LIST_IDS, CONF_ALLOWED_CALENDAR_IDS)
+            }),
+        )
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:

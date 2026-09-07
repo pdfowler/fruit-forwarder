@@ -5,5 +5,6 @@
   "completed_retention": "720h",
   "keychain_service": "com.example.icloud-reminders-bridge",
   "keychain_account": "mac",
-  "lists": []
+  "lists": [],
+  "calendars": []
 }

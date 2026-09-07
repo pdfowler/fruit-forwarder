@@ -15,6 +15,11 @@ jobs:
           cache: pip
       - run: pip install -r requirements-test.txt
       - run: python -m pytest -q
+      - name: Validate HACS distribution
+        run: |
+          bash -n scripts/*.sh
+          scripts/export-hacs.sh "$RUNNER_TEMP/ha-fruit-forwarder"
+          scripts/check-hacs-export.sh
   go:
     runs-on: macos-latest
     steps:

@@ -1,0 +1,60 @@
+name: Release preparation
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  metadata-and-ha:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate metadata and deterministic HACS export
+        run: |
+          python3 -m json.tool release/compatibility.json >/dev/null
+          python3 -m json.tool packaging/mcp/server.json.in >/dev/null
+          scripts/export-hacs.sh "$RUNNER_TEMP/ha-fruit-forwarder"
+          scripts/check-hacs-export.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ha-fruit-forwarder
+          path: ${{ runner.temp }}/ha-fruit-forwarder
+
+  macos-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build versioned bridge
+        run: |
+          version="$(tr -d '[:space:]' < release/VERSION)"
+          mkdir -p dist/macos
+          go build -trimpath -ldflags "-X main.version=${version}" \
+            -o dist/macos/icloud-reminders-bridge ./cmd/icloud-reminders-bridge
+          dist/macos/icloud-reminders-bridge version
+      - name: Build and sign EventKit helper
+        run: |
+          mkdir -p dist/native
+          swiftc -O -parse-as-library eventkit-helper/main.swift \
+            -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
+            -Xlinker "$PWD/deployment/eventkit-helper-Info.plist" \
+            -o dist/native/icloud-reminders-eventkit
+          codesign --force --sign - --options runtime \
+            --identifier com.example.icloud-reminders-bridge.eventkit \
+            --entitlements deployment/reminders.entitlements \
+            dist/native/icloud-reminders-eventkit
+          codesign --verify --strict dist/native/icloud-reminders-eventkit
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fruit-forwarder-macos-unsigned
+          path: dist/macos

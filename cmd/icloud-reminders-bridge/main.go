@@ -20,6 +20,9 @@ import (
 	"github.com/pdfowler/icloud-reminders-bridge/internal/state"
 )
 
+// version is injected by release builds; development builds report dev.
+var version = "dev"
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -32,6 +35,10 @@ func run() error {
 		return usageError()
 	}
 	command := os.Args[1]
+	if command == "version" {
+		fmt.Println(version)
+		return nil
+	}
 	if command == "discover-calendars" {
 		calendars, err := reminderstore.DiscoverCalendars(context.Background(), config.DefaultEventKitHelperPath())
 		if err != nil {
@@ -86,6 +93,11 @@ func run() error {
 		if err != nil {
 			return err
 		}
+		releaseLock, err := state.Acquire(cfg.StatePath + ".lock")
+		if err != nil {
+			return err
+		}
+		defer releaseLock()
 		logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 		client := hasync.New(cfg, token, store, bridgeState, logger)
 		if command == "sync-once" {
@@ -139,5 +151,5 @@ func pair(cfg *config.Config) error {
 }
 
 func usageError() error {
-	return errors.New("usage: icloud-reminders-bridge <discover|discover-calendars|pair|check-config|sync-once|serve|mcp> [--config path]")
+	return errors.New("usage: icloud-reminders-bridge <version|discover|discover-calendars|pair|check-config|sync-once|serve|mcp> [--config path]")
 }

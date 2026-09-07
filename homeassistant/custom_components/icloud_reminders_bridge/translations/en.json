@@ -1,6 +1,14 @@
 {
   "config": {
     "step": {
+      "reconfigure": {
+        "title": "Change allowed reminder lists and calendars",
+        "description": "Enter exact EventKit IDs, one per line. Match these with the Mac configuration. Removed lists lose their queued edits. Pairing and existing entity identities are preserved.",
+        "data": {
+          "allowed_list_ids": "Allowed reminder list IDs",
+          "allowed_calendar_ids": "Allowed calendar IDs"
+        }
+      },
       "user": {
         "title": "Connect an iCloud Reminders bridge",
         "description": "Run `icloud-reminders-bridge pair` on the macOS bridge, then paste the copied token and the exact list IDs from `icloud-reminders-bridge discover`.",
@@ -18,6 +26,7 @@
       "no_lists": "Enter at least one exact EventKit reminder list or calendar ID."
     },
     "abort": {
+      "reconfigure_successful": "The allowed lists and calendars were updated.",
       "already_configured": "This bridge is already configured."
     }
   }

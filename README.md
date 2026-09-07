@@ -1,8 +1,8 @@
-# iCloud Reminders Bridge
+# Fruit Forwarder
 
-A local macOS bridge between Apple Reminders and Home Assistant. It uses Apple's
-EventKit API for reads and writes, exposes a small stdio MCP server, and pushes
-allowlisted reminder lists to Home Assistant todo entities.
+A local macOS bridge between Apple Reminders/Calendar and Home Assistant. It
+uses Apple's EventKit API for reads and writes, exposes a small stdio MCP
+server, and pushes allowlisted data to Home Assistant.
 
 **Early release.** Reminders and read-only calendars support HA and local MCP
 (see [calendar setup](docs/calendar-protocol.md)). Background
@@ -80,6 +80,22 @@ Review the allowlist and the Home Assistant webhook path before placing the
 service on a network shared with untrusted clients.
 
 ## Development
+
+The repository is a small polyglot monorepo: Go owns the bridge/MCP process,
+Swift owns the EventKit helper, and the Home Assistant integration is exported
+as a deterministic HACS distribution. Use [Task](https://taskfile.dev/) for
+the common cross-target commands:
+
+```sh
+task check          # Go, HA, metadata and script checks
+task package:ha    # build dist/ha-fruit-forwarder for HACS review
+task package:macos # build versioned Go and native artifacts on macOS
+task release:check # validate a reproducible candidate without publishing
+```
+
+The MCP registry metadata is intentionally rendered only after a versioned MCPB
+artifact has been built and hashed; see [packaging/mcp/README.md](packaging/mcp/README.md).
+No publishing command is implicit in a build or release check.
 
 ```sh
 go test -race ./...

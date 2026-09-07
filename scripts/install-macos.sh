@@ -15,9 +15,15 @@ PLIST_PATH="${HOME}/Library/LaunchAgents/${SERVICE_LABEL}.plist"
 mkdir -p "${SERVICE_DIR}/build" "${BIN_DIR}" "${CONFIG_DIR}" "${LOG_DIR}" "$(dirname "${PLIST_PATH}")"
 chmod 0700 "${INSTALL_DIR}" "${BIN_DIR}"
 
+VERSION="$(tr -d '[:space:]' < "${SERVICE_DIR}/release/VERSION")"
+if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+  echo "invalid release version: ${VERSION}" >&2
+  exit 2
+fi
+
 (
   cd "${SERVICE_DIR}"
-  go build -trimpath -o "build/icloud-reminders-bridge" ./cmd/icloud-reminders-bridge
+  go build -trimpath -ldflags "-X main.version=${VERSION}" -o "build/icloud-reminders-bridge" ./cmd/icloud-reminders-bridge
   swiftc -O -parse-as-library eventkit-helper/main.swift \
     -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
     -Xlinker "${SERVICE_DIR}/deployment/eventkit-helper-Info.plist" \

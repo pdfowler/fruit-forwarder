@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.pdfowler/fruit-forwarder",
+  "title": "Fruit Forwarder MCP",
+  "description": "Locally hosted, scoped MCP access to Apple Reminders and read-only Calendar data through macOS EventKit, with optional Home Assistant synchronization.",
+  "repository": {
+    "url": "https://github.com/pdfowler/fruit-forwarder",
+    "source": "github"
+  },
+  "version": "@@VERSION@@",
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "@@MCPB_URL@@",
+      "version": "@@VERSION@@",
+      "fileSha256": "@@MCPB_SHA256@@",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

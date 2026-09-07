@@ -17,7 +17,10 @@ func GenerateToken() (string, error) {
 }
 
 func Store(service, account, token string) error {
-	cmd := exec.Command("/usr/bin/security", "add-generic-password", "-U", "-s", service, "-a", account, "-w", token)
+	// Keep -w last so security prompts on stdin. Passing the token as an
+	// argument exposes it to process inspection and shell history.
+	cmd := exec.Command("/usr/bin/security", "add-generic-password", "-U", "-s", service, "-a", account, "-w")
+	cmd.Stdin = strings.NewReader(token + "\n")
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("store token in Keychain: %w: %s", err, strings.TrimSpace(string(output)))
 	}

@@ -21,10 +21,16 @@ separate release work.
 Before opening a pull request on macOS, run:
 
 ```sh
+task check
 go test -race ./...
 go vet ./...
 bash -n scripts/install-macos.sh
 ```
+
+`task package:ha` produces the reviewable HACS tree under `dist/` and
+`scripts/check-hacs-export.sh` verifies that the export is deterministic. The
+Mac and native targets are host-specific; CI builds them on macOS. Keep
+generated `build/` and `dist/` output out of commits.
 
 The Go suite also builds a bridge subprocess and exercises its real stdio MCP
 transport with a synthetic executable helper. It verifies configuration wiring,

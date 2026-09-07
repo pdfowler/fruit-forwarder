@@ -8,3 +8,5 @@ state.json
 config.json
 .venv/
 .pytest_cache/
+.task/
+dist/

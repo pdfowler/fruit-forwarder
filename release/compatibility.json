@@ -1,0 +1,12 @@
+{
+  "product": "Fruit Forwarder",
+  "protocol_version": 1,
+  "mac_application_version": "0.1.0",
+  "mcp_server_version": "0.1.0",
+  "home_assistant_integration_version": "0.1.0",
+  "minimum_home_assistant_test_baseline": "2026.2.3",
+  "native_platform": "macOS",
+  "mcp_transport": "stdio",
+  "calendar_access": "read-only",
+  "notes": "Pre-release compatibility manifest; update only after the release matrix passes."
+}
