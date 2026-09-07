@@ -43,6 +43,8 @@ func run() error {
 	configPath := flags.String("config", config.DefaultPath(), "path to bridge config")
 	eventKitHelper := flags.String("eventkit-helper", "", "override the EventKit helper executable path")
 	jsonOutput := flags.Bool("json", false, "format status or doctor output as JSON")
+	commandID := flags.String("command-id", "", "in-flight command identifier for recover")
+	resolution := flags.String("resolution", "", "recover resolution: applied or retry")
 	if err := flags.Parse(os.Args[2:]); err != nil {
 		return err
 	}
@@ -71,6 +73,9 @@ func run() error {
 	}
 	if command == "status" || command == "doctor" {
 		return reportStatus(cfg, *configPath, command == "doctor", *jsonOutput)
+	}
+	if command == "recover" {
+		return recoverCommand(cfg, *commandID, *resolution)
 	}
 	if command == "pair" {
 		return pair(cfg)
@@ -131,6 +136,8 @@ type statusReport struct {
 	EventKitReady        bool   `json:"eventkit_ready"`
 	KeychainReady        *bool  `json:"keychain_ready,omitempty"`
 	StatePath            string `json:"state_path"`
+	StateReady           bool   `json:"state_ready"`
+	InFlightCommandID    string `json:"in_flight_command_id,omitempty"`
 }
 
 func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) error {
@@ -142,6 +149,13 @@ func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) 
 		EventKitHelper:       cfg.EventKitPath(),
 		EventKitReady:        reminderstore.ValidateHelperPath(cfg.EventKitPath()) == nil,
 		StatePath:            cfg.StatePath,
+		StateReady:           true,
+	}
+	bridgeState, stateErr := state.Load(cfg.StatePath)
+	if stateErr != nil {
+		report.StateReady = false
+	} else if bridgeState.InFlight != nil {
+		report.InFlightCommandID = bridgeState.InFlight.ID
 	}
 	if deep && cfg.HomeAssistantURL != "" {
 		_, keychainErr := keychain.Load(cfg.KeychainService, cfg.KeychainAccount)
@@ -162,12 +176,51 @@ func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) 
 		if report.KeychainReady != nil {
 			fmt.Printf("  pairing Keychain item: %s\n", readiness(*report.KeychainReady))
 		}
+		fmt.Printf("  acknowledgement state: %s\n", readiness(report.StateReady))
+		if report.InFlightCommandID != "" {
+			fmt.Printf("  uncertain command: %s (run recover with an explicit resolution)\n", report.InFlightCommandID)
+		}
 	}
 	if !report.EventKitReady {
 		return errors.New("doctor: EventKit helper is missing, unsafe, or not executable")
 	}
 	if deep && report.KeychainReady != nil && !*report.KeychainReady {
 		return errors.New("doctor: Home Assistant pairing token is not available in Keychain")
+	}
+	if !report.StateReady {
+		return errors.New("doctor: acknowledgement state is unreadable")
+	}
+	if report.InFlightCommandID != "" {
+		return fmt.Errorf("doctor: command %s has an uncertain outcome; resolve it before syncing", report.InFlightCommandID)
+	}
+	return nil
+}
+
+func recoverCommand(cfg *config.Config, commandID, resolution string) error {
+	if commandID == "" {
+		return errors.New("recover requires --command-id")
+	}
+	if resolution != "applied" && resolution != "retry" {
+		return errors.New("recover requires --resolution applied or retry")
+	}
+	bridgeState, err := state.Load(cfg.StatePath)
+	if err != nil {
+		return fmt.Errorf("load acknowledgement state: %w", err)
+	}
+	if bridgeState.InFlight == nil || bridgeState.InFlight.ID != commandID {
+		return fmt.Errorf("no matching in-flight command %q", commandID)
+	}
+	bridgeState.InFlight = nil
+	if resolution == "applied" {
+		bridgeState.MarkApplied(commandID)
+	}
+	if err := bridgeState.Save(cfg.StatePath); err != nil {
+		return fmt.Errorf("save acknowledgement state: %w", err)
+	}
+	if resolution == "applied" {
+		fmt.Printf("Marked uncertain command %s as applied; it will not be retried.\n", commandID)
+	} else {
+		fmt.Printf("Cleared uncertain command %s; it may be retried on the next sync.\n", commandID)
 	}
 	return nil
 }
@@ -234,5 +287,5 @@ func pair(cfg *config.Config) error {
 }
 
 func usageError() error {
-	return errors.New("usage: icloud-reminders-bridge <version|discover|discover-calendars|pair|status|doctor|check-config|sync-once|serve|mcp> [--config path] [--eventkit-helper path] [--json]")
+	return errors.New("usage: icloud-reminders-bridge <version|discover|discover-calendars|pair|status|doctor|recover|check-config|sync-once|serve|mcp> [--config path] [--eventkit-helper path] [--json] [--command-id id] [--resolution applied|retry]")
 }

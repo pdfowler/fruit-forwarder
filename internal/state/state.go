@@ -10,6 +10,8 @@ import (
 	"syscall"
 
 	"golang.org/x/sys/unix"
+
+	"github.com/pdfowler/icloud-reminders-bridge/internal/model"
 )
 
 // Acquire prevents two bridge processes from applying the same HA command at
@@ -49,7 +51,8 @@ const maxAppliedCommands = 1000
 const maxCommandIDLength = 256
 
 type State struct {
-	AppliedCommandIDs []string `json:"applied_command_ids"`
+	AppliedCommandIDs []string       `json:"applied_command_ids"`
+	InFlight          *model.Command `json:"in_flight,omitempty"`
 }
 
 func Load(path string) (*State, error) {
@@ -87,9 +90,15 @@ func (s *State) Has(id string) bool {
 
 func (s *State) MarkApplied(id string) {
 	if s.Has(id) {
+		if s.InFlight != nil && s.InFlight.ID == id {
+			s.InFlight = nil
+		}
 		return
 	}
 	s.AppliedCommandIDs = append(s.AppliedCommandIDs, id)
+	if s.InFlight != nil && s.InFlight.ID == id {
+		s.InFlight = nil
+	}
 	if len(s.AppliedCommandIDs) > maxAppliedCommands {
 		s.AppliedCommandIDs = append([]string(nil), s.AppliedCommandIDs[len(s.AppliedCommandIDs)-maxAppliedCommands:]...)
 	}
@@ -152,6 +161,43 @@ func validate(s *State) error {
 			return fmt.Errorf("duplicate applied command identifier %q", id)
 		}
 		seen[id] = struct{}{}
+	}
+	if s.InFlight != nil {
+		if err := validateInFlight(s.InFlight); err != nil {
+			return err
+		}
+		if _, exists := seen[s.InFlight.ID]; exists {
+			return errors.New("in-flight command is already acknowledged")
+		}
+	}
+	return nil
+}
+
+func validateInFlight(command *model.Command) error {
+	if command == nil || strings.TrimSpace(command.ID) == "" || len(command.ID) > maxCommandIDLength {
+		return errors.New("in-flight command identifier must be non-empty and bounded")
+	}
+	if strings.TrimSpace(command.ListID) == "" || len(command.ListID) > maxCommandIDLength {
+		return errors.New("in-flight command list identifier must be non-empty and bounded")
+	}
+	switch command.Action {
+	case "create":
+		if strings.TrimSpace(command.Item.Summary) == "" {
+			return errors.New("in-flight create command requires a summary")
+		}
+	case "update":
+		if strings.TrimSpace(command.Item.UID) == "" || strings.TrimSpace(command.Item.Summary) == "" {
+			return errors.New("in-flight update command requires a uid and summary")
+		}
+	case "complete", "reopen":
+		if strings.TrimSpace(command.Item.UID) == "" {
+			return errors.New("in-flight completion command requires a uid")
+		}
+	default:
+		return fmt.Errorf("in-flight command has unsupported action %q", command.Action)
+	}
+	if len(command.Item.Summary) > maxCommandIDLength || len(command.Item.Description) > 4096 || len(command.Item.Due) > maxCommandIDLength {
+		return errors.New("in-flight command item fields exceed supported limits")
 	}
 	return nil
 }

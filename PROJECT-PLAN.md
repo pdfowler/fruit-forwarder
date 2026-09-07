@@ -231,7 +231,7 @@ Tooling references: [Task guide](https://taskfile.dev/docs/guide), [Task schema]
 **Priority: release blocker. Dependencies: stable native execution; protocol design.**
 
 - Specify command states such as queued, in-progress, confirmed, retryable failure, permanent failure and uncertain outcome. Define which state HA displays and which states may be retried.
-- Address the gap between saving a reminder in EventKit and persisting its acknowledgement. Evaluate a recoverable operation journal and a safe correlation mechanism. Do not claim exactly-once behavior without evidence across that boundary.
+- Address the gap between saving a reminder in EventKit and persisting its acknowledgement. The Mac now journals an in-flight command before invoking EventKit, stops automatic replay after an ambiguous failure, and exposes explicit `recover --resolution applied|retry` choices. Continue evaluating a stronger correlation mechanism; do not claim exactly-once behavior without evidence across that boundary.
 - Inspect the current 1,000-command acknowledgement cap. Define retention relative to pending commands and restored HA backups so old commands cannot silently replay after eviction.
 - Prevent concurrent `serve`, `sync-once` and replacement processes from racing on command execution or the same state file. Coordinate MCP mutations where needed.
 - Test atomic replacement separately from power-loss durability; evaluate file and directory synchronization, permissions, failed writes and corrupt state recovery.

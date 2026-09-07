@@ -195,6 +195,42 @@ func TestSyncOnceDoesNotReapplyPersistedCommand(t *testing.T) {
 	}
 }
 
+func TestSyncOnceStopsOnUncertainCommandOutcome(t *testing.T) {
+	t.Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(model.SyncResponse{
+			Version:  model.ProtocolVersion,
+			Commands: []model.Command{{ID: "cmd-uncertain", Action: "complete", ListID: "list", Item: model.Item{UID: "item"}}},
+		})
+	}))
+	defer server.Close()
+	cfg := &config.Config{BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s", StatePath: filepath.Join(t.TempDir(), "state.json")}
+	store := &failingApplyStore{}
+	client := New(cfg, "token", store, &state.State{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	client.httpClient = server.Client()
+	if _, err := client.SyncOnce(context.Background()); err == nil || !strings.Contains(err.Error(), "uncertain") {
+		t.Fatalf("expected uncertain outcome, got %v", err)
+	}
+	loaded, err := state.Load(cfg.StatePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.InFlight == nil || loaded.InFlight.ID != "cmd-uncertain" {
+		t.Fatalf("in-flight command was not persisted: %#v", loaded.InFlight)
+	}
+	if store.calls != 1 {
+		t.Fatalf("apply calls = %d, want one", store.calls)
+	}
+}
+
+type failingApplyStore struct{ calls int }
+
+func (*failingApplyStore) Snapshot(context.Context) ([]model.List, error) { return nil, nil }
+func (s *failingApplyStore) ApplyCommand(context.Context, model.Command) error {
+	s.calls++
+	return errors.New("helper timed out")
+}
+
 func TestPostSnapshotRejectsUnboundedOrUnsupportedCommands(t *testing.T) {
 	for _, command := range []model.Command{
 		{ID: "", Action: "complete", ListID: "list", Item: model.Item{UID: "item"}},

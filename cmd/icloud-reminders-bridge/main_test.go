@@ -12,6 +12,8 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pdfowler/icloud-reminders-bridge/internal/config"
+	"github.com/pdfowler/icloud-reminders-bridge/internal/model"
+	"github.com/pdfowler/icloud-reminders-bridge/internal/state"
 )
 
 // This crosses the real CLI/stdio/helper-process boundary, using synthetic
@@ -163,5 +165,33 @@ func TestDiscoveryUsesConfiguredHelperPath(t *testing.T) {
 	}
 	if got, err := discoveryHelperPath(filepath.Join(dir, "missing.json"), ""); err != nil || got != config.DefaultEventKitHelperPath() {
 		t.Fatalf("missing config discovery = %q, %v", got, err)
+	}
+}
+
+func TestRecoverCommandRequiresAndAppliesExplicitResolution(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	if err := (&state.State{InFlight: &model.Command{
+		ID: "command-1", Action: "create", ListID: "list-1",
+		Item: model.Item{Summary: "Task"},
+	}}).Save(path); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{StatePath: path}
+	if err := recoverCommand(cfg, "command-1", "applied"); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := state.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.InFlight != nil || !loaded.Has("command-1") {
+		t.Fatalf("applied resolution did not update state: %#v", loaded)
+	}
+}
+
+func TestRecoverCommandRejectsMissingResolution(t *testing.T) {
+	cfg := &config.Config{StatePath: filepath.Join(t.TempDir(), "state.json")}
+	if err := recoverCommand(cfg, "command-1", ""); err == nil {
+		t.Fatal("recover accepted an implicit resolution")
 	}
 }

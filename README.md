@@ -68,6 +68,9 @@ choices.
 After a reboot or upgrade, `icloud-reminders-bridge doctor --json` checks the
 configured helper and (when HA sync is enabled) the pairing Keychain item
 without reading reminder contents.
+If a write reaches an uncertain EventKit outcome, `doctor` reports the
+in-flight command and syncing pauses until it is explicitly resolved; see the
+recovery steps in [docs/setup.md](docs/setup.md).
 
 The pairing token is stored in the macOS login Keychain. Do not commit the
 runtime config, state file, logs, or token.

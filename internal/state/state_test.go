@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/pdfowler/icloud-reminders-bridge/internal/model"
 )
 
 func TestStateRoundTripAndDeduplication(t *testing.T) {
@@ -66,6 +68,25 @@ func TestStateSaveRejectsOversizedLedger(t *testing.T) {
 	state := &State{AppliedCommandIDs: make([]string, maxAppliedCommands+1)}
 	if err := state.Save(filepath.Join(t.TempDir(), "state.json")); err == nil {
 		t.Fatal("oversized ledger saved")
+	}
+}
+
+func TestStateRoundTripsInFlightCommand(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "state.json")
+	state := &State{InFlight: &model.Command{
+		ID: "command-1", Action: "create", ListID: "list-1",
+		Item: model.Item{Summary: "Task"},
+	}}
+	if err := state.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.InFlight == nil || loaded.InFlight.ID != "command-1" {
+		t.Fatalf("in-flight command lost: %#v", loaded.InFlight)
 	}
 }
 

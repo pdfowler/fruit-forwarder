@@ -33,6 +33,13 @@ HA persists reminder snapshots and pending commands in its storage. Recent
 completed-item filtering changes the published snapshot; it does not delete
 Apple Reminders history or scrub existing HA backups and recorder history.
 
+The Mac acknowledgement state journals a command before invoking EventKit. If
+the helper fails or the process is interrupted after that point, the command is
+marked as having an uncertain outcome and automatic command application stops.
+An operator must inspect the Apple state and use the explicit `recover` command
+to mark the operation applied or allow a retry. This favors avoiding duplicate
+creates over silently retrying an ambiguous write.
+
 On integration load, the current HA allowlist also filters stored snapshots and
 queued commands. Removed lists and their commands are removed from active bridge
 storage, so restoring access later does not replay the old commands. Existing

@@ -64,6 +64,16 @@ Use the non-mutating diagnostics after an upgrade or reboot:
 `status` checks configuration and executable ownership without reading reminder
 contents. `doctor` additionally checks the Home Assistant pairing item in the
 login Keychain when HA sync is configured; neither command prints the token.
+If a mutation reaches an ambiguous EventKit outcome, the bridge records the
+in-flight command and pauses further command application rather than blindly
+retrying it. Inspect the command ID with `doctor --json`, then choose an
+explicit resolution only after checking Apple Reminders:
+
+```sh
+"$bridge" recover --command-id COMMAND_ID --resolution applied
+# or, if the reminder was not changed and a retry is safe:
+"$bridge" recover --command-id COMMAND_ID --resolution retry
+```
 
 Each installation keeps the previous executable pair under
 `~/Library/Application Support/icloud-reminders-bridge/rollback/`. If a new

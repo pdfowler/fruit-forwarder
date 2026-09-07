@@ -70,6 +70,9 @@ func (c *Client) Run(ctx context.Context) error {
 }
 
 func (c *Client) SyncOnce(ctx context.Context) (int, error) {
+	if c.state.InFlight != nil {
+		return 0, fmt.Errorf("command %s has an uncertain outcome; resolve it before syncing again", c.state.InFlight.ID)
+	}
 	lists, err := c.store.Snapshot(ctx)
 	if err != nil {
 		return 0, err
@@ -83,9 +86,13 @@ func (c *Client) SyncOnce(ctx context.Context) (int, error) {
 		if c.state.Has(command.ID) {
 			continue
 		}
+		c.state.InFlight = &command
+		if err := c.state.Save(c.cfg.StatePath); err != nil {
+			return applied, fmt.Errorf("persist in-flight command %s: %w", command.ID, err)
+		}
 		if err := c.store.ApplyCommand(ctx, command); err != nil {
 			c.logger.Error("Home Assistant command failed", "command_id", command.ID, "action", command.Action, "error", err)
-			continue
+			return applied, fmt.Errorf("command %s outcome is uncertain: %w", command.ID, err)
 		}
 		c.state.MarkApplied(command.ID)
 		if err := c.state.Save(c.cfg.StatePath); err != nil {
