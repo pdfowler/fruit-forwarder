@@ -76,6 +76,38 @@ async def test_failed_ack_save_preserves_pending_command(tmp_path):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "item",
+    [
+        {"uid": "", "summary": "x" * 257, "status": "needs_action"},
+        {"uid": "", "summary": "Task", "status": "needs_action", "description": "x" * 4097},
+    ],
+)
+async def test_command_fields_are_bounded_before_storage(tmp_path, item):
+    bridge = runtime(tmp_path)
+    await bridge.async_process_snapshot(snapshot())
+    with pytest.raises(ProtocolError):
+        await bridge.async_queue_command("create", "allowed", item)
+    assert bridge.commands == []
+
+
+@pytest.mark.asyncio
+async def test_command_queue_has_a_hard_bound(tmp_path):
+    bridge = runtime(tmp_path)
+    await bridge.async_process_snapshot(snapshot())
+    bridge.commands = [
+        {"id": str(index), "action": "create", "list_id": "allowed", "item": {
+            "uid": "", "summary": "Queued", "status": "needs_action"
+        }}
+        for index in range(1000)
+    ]
+    with pytest.raises(ProtocolError, match="queue is full"):
+        await bridge.async_queue_command(
+            "create", "allowed", {"uid": "", "summary": "One more", "status": "needs_action"}
+        )
+
+
+@pytest.mark.asyncio
 async def test_out_of_scope_snapshot_does_not_change_state(tmp_path):
     bridge = runtime(tmp_path)
     await bridge.async_process_snapshot(snapshot())

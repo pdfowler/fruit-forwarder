@@ -7,6 +7,7 @@ from collections.abc import Callable
 from copy import deepcopy
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+import json
 import uuid
 from typing import Any
 
@@ -19,6 +20,7 @@ from .const import (
     CONF_ALLOWED_LIST_IDS,
     CONF_PAIRING_TOKEN,
     CONF_BRIDGE_ID,
+    MAX_PAYLOAD_BYTES,
     MAX_ITEMS,
     MAX_LISTS,
     MAX_COMMANDS,
@@ -71,10 +73,30 @@ class BridgeRuntime:
             if isinstance(item, dict) and isinstance(item.get("id"), str)
             and item["id"] in allowed_ids
         }
-        self.commands = [
-            item for item in stored.get("commands", [])
-            if isinstance(item, dict) and item.get("list_id") in allowed_ids
-        ]
+        raw_commands = stored.get("commands", [])
+        if not isinstance(raw_commands, list) or len(raw_commands) > MAX_COMMANDS:
+            raise ProtocolError("Stored command queue is invalid or exceeds its bound")
+        self.commands = []
+        for command in raw_commands:
+            if not isinstance(command, dict):
+                raise ProtocolError("Stored command must be an object")
+            command_id = command.get("id")
+            list_id = command.get("list_id")
+            action = command.get("action")
+            item = command.get("item")
+            if (
+                not isinstance(command_id, str)
+                or not command_id.strip()
+                or len(command_id) > 256
+                or not isinstance(list_id, str)
+                or not list_id.strip()
+                or len(list_id) > MAX_STRING_LENGTH
+                or action not in {"create", "update", "complete", "reopen"}
+            ):
+                raise ProtocolError("Stored command has invalid identity or action")
+            _validate_command_item(action, item)
+            if list_id in allowed_ids:
+                self.commands.append(command)
         self.last_sync = stored.get("last_sync")
         self.calendar_last_sync = stored.get("calendar_last_sync")
         if (len(self.lists) != len(stored.get("lists", []))
@@ -132,6 +154,8 @@ class BridgeRuntime:
                     and not self.lists[command["list_id"]]["read_only"]
                 ]),
             }
+            if len(json.dumps(response).encode("utf-8")) > MAX_PAYLOAD_BYTES:
+                raise ProtocolError("Queued command response exceeds the payload bound")
         self._notify()
         return response
 
@@ -141,6 +165,7 @@ class BridgeRuntime:
         """Persist a scoped command before returning success to HA."""
         if action not in {"create", "update", "complete", "reopen"}:
             raise ProtocolError(f"Unsupported action: {action}")
+        _validate_command_item(action, item)
         if list_id not in self.lists:
             raise ProtocolError("Reminder list is not available from the bridge")
         command_id = uuid.uuid4().hex
@@ -156,6 +181,8 @@ class BridgeRuntime:
                 raise ProtocolError("Reminder list is outside the configured allowlist")
             if reminder_list.get("read_only"):
                 raise ProtocolError("Reminder list is read-only")
+            if len(self.commands) >= MAX_COMMANDS:
+                raise ProtocolError("Reminder command queue is full; wait for a sync")
             if action != "create":
                 uid = item.get("uid", "")
                 if uid.startswith("pending:"):
@@ -273,6 +300,35 @@ def _required_string(value: dict[str, Any], key: str) -> str:
     if not isinstance(result, str) or not result.strip() or len(result) > MAX_STRING_LENGTH:
         raise ProtocolError(f"{key} must be a non-empty string")
     return result
+
+
+def _validate_command_item(action: str, item: Any) -> None:
+    """Bound queued mutation fields before they enter HA storage."""
+    if not isinstance(item, dict):
+        raise ProtocolError("Command item must be an object")
+    uid = item.get("uid")
+    if action != "create" and (
+        not isinstance(uid, str) or not uid.strip() or len(uid) > MAX_STRING_LENGTH
+    ):
+        raise ProtocolError("Mutation command requires a bounded uid")
+    summary = item.get("summary")
+    if action in {"create", "update"} and (
+        not isinstance(summary, str) or not summary.strip() or len(summary) > 256
+    ):
+        raise ProtocolError("Command summary is empty or exceeds 256 characters")
+    if summary is not None and (
+        not isinstance(summary, str) or len(summary) > 256
+    ):
+        raise ProtocolError("Command summary exceeds 256 characters")
+    status = item.get("status")
+    if status is not None and status not in {"needs_action", "completed"}:
+        raise ProtocolError("Command status must be needs_action or completed")
+    for field, limit in (("description", 4096), ("due", MAX_STRING_LENGTH), ("completed", MAX_STRING_LENGTH)):
+        value = item.get(field)
+        if value is not None and (not isinstance(value, str) or len(value) > limit):
+            raise ProtocolError(f"Command {field} is invalid or exceeds its bound")
+    if len(json.dumps(item, ensure_ascii=False).encode("utf-8")) > 16 * 1024:
+        raise ProtocolError("Command item exceeds 16 KiB")
 
 
 def _validate_item(value: Any) -> dict[str, Any]:
