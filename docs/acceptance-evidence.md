@@ -25,7 +25,7 @@ Do not mark a row **proven** from unit-test output alone.
 | R4 | Independent reminder/calendar opt-in | Partial | Separate optional configuration and calendar-failure isolation tests | Reminder-only, calendar-only, combined and permission-denied installed runs |
 | R5 | Secure local MCP | Partial | Stdio protocol tests, read-only tool omission, bounded input checks, MCPB validation | At least one independent MCP client, process/listener inspection and permission evidence |
 | R6 | Recoverable HA synchronization | Partial | Durable state journal, explicit mutation recovery, persisted queue-epoch fencing, offline/calendar-failure tests | HA restart/crash/concurrent-edit and backup/restore tests with visible pending/error UX |
-| R7 | Approachable installation/upgrades | Partial | Versioned archive, installer, rollback scripts, setup documentation, tested `status`/`doctor` diagnostics, and special-path LaunchAgent rendering test | Clean-user install, upgrade and rollback from the packaged artifact |
+| R7 | Approachable installation/upgrades | Partial | Versioned archive, installer, rollback scripts, setup documentation, tested `status`/`doctor` diagnostics, special-path LaunchAgent rendering test, and pre-switch install-path/configuration trust tests | Clean-user install, upgrade and rollback from the packaged artifact |
 | R8 | Privacy-preserving operation | Partial | Keychain stdin handling, file trust checks, bounded-state tests including native helper output limits; Home Assistant diagnostics exclusion test | Review of installed process args, backups, diagnostics, ACLs and signed release behavior |
 | R9 | Shareable open-source distribution | Partial | MIT license, CI, contributor/security docs, deterministic HACS export, guarded HACS and MCP publication workflows, macOS/MCP candidates, complete-history attribution check | Authorized public repositories, release assets, support channel and ecosystem publication |
 | R10 | Honest compatibility/support claims | Partial | [compatibility matrix](compatibility.md), version checks and release manifest | Recorded supported-version runs, known-limitations review and support policy |
@@ -59,6 +59,17 @@ be paired with the installed acceptance records below.
 - No legacy service was stopped, migrated, or permission-reset during this
   observation. Fresh stable-identity permissions and lifecycle testing remain
   required before claiming R1/M1 background support.
+
+### Dean live refresh (2026-09-07 13:52 PDT)
+
+- The candidate `com.pdfowler.fruitforwarder` LaunchAgent is still absent;
+  `net.pdfowler.icloud-reminders-bridge` remains the only active writer under
+  `gui/501`, using the legacy `launchctl asuser` arrangement.
+- The legacy service continues to emit `XPC error communicating with
+  calaccessd: Unknown error` on its 30-second sync cycle. Two legacy MCP
+  processes are also present; no candidate service was started.
+- This was read-only observation. No service, permission, configuration,
+  Keychain item, or household data was changed.
 
 ## Installed acceptance record template
 

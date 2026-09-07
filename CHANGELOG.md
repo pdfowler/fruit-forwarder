@@ -17,6 +17,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   instead of silently losing calendar data with older HA integrations.
 - Add persisted Home Assistant queue epochs so restored command queues are
   fenced until an operator explicitly reviews and accepts the new epoch.
+- Make packaged installation validate configuration and install-path trust
+  before switching binaries, with rollback symlink guards and regression tests.
 - Add a guarded, tag-only workflow for publishing the generated HACS
   distribution repository.
 - Bound native helper output before parsing or reporting errors.

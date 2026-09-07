@@ -22,8 +22,16 @@ case "${backup}" in
   *) echo "rollback path must be inside ${ROLLBACK_DIR}" >&2; exit 2 ;;
 esac
 [[ -d "${backup}" ]] || { echo "rollback directory not found: ${backup}" >&2; exit 2; }
+[[ ! -L "${backup}" && ! -L "${BIN_DIR}" ]] || {
+  echo "rollback target or install bin directory must not be a symlink" >&2
+  exit 2
+}
 [[ -f "${backup}/icloud-reminders-bridge" && -f "${backup}/icloud-reminders-eventkit" ]] || {
   echo "rollback directory does not contain both bridge executables" >&2
+  exit 2
+}
+[[ ! -L "${backup}/icloud-reminders-bridge" && ! -L "${backup}/icloud-reminders-eventkit" ]] || {
+  echo "rollback executables must not be symlinks" >&2
   exit 2
 }
 

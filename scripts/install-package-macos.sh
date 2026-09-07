@@ -46,13 +46,48 @@ VERSION="$("${PACKAGE_BRIDGE}" version)"
   exit 2
 }
 
+if [[ -L "${CONFIG_DIR}" || -L "${CONFIG_PATH}" ]]; then
+  echo "refusing a symlinked configuration path" >&2
+  exit 2
+fi
+for path in "${INSTALL_DIR}" "${BIN_DIR}" "${ROLLBACK_DIR}" "${LOG_DIR}"; do
+  if [[ -L "${path}" ]]; then
+    echo "refusing a symlinked install path: ${path}" >&2
+    exit 2
+  fi
+done
 mkdir -p "${BIN_DIR}" "${ROLLBACK_DIR}" "${CONFIG_DIR}" "${LOG_DIR}" "$(dirname "${PLIST_PATH}")"
 chmod 0700 "${INSTALL_DIR}" "${BIN_DIR}" "${ROLLBACK_DIR}"
+for path in "${INSTALL_DIR}" "${BIN_DIR}" "${ROLLBACK_DIR}" "${LOG_DIR}"; do
+  if [[ -L "${path}" ]]; then
+    echo "refusing a symlinked install path: ${path}" >&2
+    exit 2
+  fi
+done
+
+if [[ ! -f "${CONFIG_PATH}" ]]; then
+  if [[ "${MIGRATE_HOME_CTRL}" == true && -f "${LEGACY_CONFIG_PATH}" ]]; then
+    [[ ! -L "${LEGACY_CONFIG_PATH}" ]] || { echo "refusing a symlinked legacy configuration" >&2; exit 2; }
+    install -m 0600 "${LEGACY_CONFIG_PATH}" "${CONFIG_PATH}"
+    echo "Migrated the existing home-ctrl configuration; its explicit Keychain and state paths were preserved." >&2
+  else
+    install -m 0600 "${PACKAGE_DIR}/config.example.json" "${CONFIG_PATH}"
+    echo "Created ${CONFIG_PATH}; add exact IDs, then rerun this installer." >&2
+    if [[ "${INSTALL_ONLY}" != true ]]; then
+      exit 2
+    fi
+  fi
+fi
+chmod 0600 "${CONFIG_PATH}"
+
 STAGE_BRIDGE="${BIN_DIR}/.icloud-reminders-bridge.new"
 STAGE_EVENTKIT="${BIN_DIR}/.icloud-reminders-eventkit.new"
 install -m 0755 "${PACKAGE_BRIDGE}" "${STAGE_BRIDGE}"
 install -m 0755 "${PACKAGE_EVENTKIT}" "${STAGE_EVENTKIT}"
 codesign --verify --strict "${STAGE_EVENTKIT}"
+if [[ "${INSTALL_ONLY}" != true ]]; then
+  "${STAGE_BRIDGE}" check-config --config "${CONFIG_PATH}"
+fi
 
 INSTALL_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 BACKUP_DIR="${ROLLBACK_DIR}/${VERSION}-${INSTALL_STAMP}"
@@ -71,29 +106,11 @@ if ! mv "${STAGE_EVENTKIT}" "${EVENTKIT_BIN}"; then
   exit 1
 fi
 
-if [[ -L "${CONFIG_DIR}" || -L "${CONFIG_PATH}" ]]; then
-  echo "refusing a symlinked configuration path" >&2
-  exit 2
-fi
-if [[ ! -f "${CONFIG_PATH}" ]]; then
-  if [[ "${MIGRATE_HOME_CTRL}" == true && -f "${LEGACY_CONFIG_PATH}" ]]; then
-    [[ ! -L "${LEGACY_CONFIG_PATH}" ]] || { echo "refusing a symlinked legacy configuration" >&2; exit 2; }
-    install -m 0600 "${LEGACY_CONFIG_PATH}" "${CONFIG_PATH}"
-    echo "Migrated the existing home-ctrl configuration; its explicit Keychain and state paths were preserved." >&2
-  else
-    install -m 0600 "${PACKAGE_DIR}/config.example.json" "${CONFIG_PATH}"
-    echo "Created ${CONFIG_PATH}; add exact IDs, then rerun this installer." >&2
-    exit 2
-  fi
-fi
-chmod 0600 "${CONFIG_PATH}"
 if [[ "${INSTALL_ONLY}" == true ]]; then
   echo "Installed Fruit Forwarder ${VERSION}; LaunchAgent activation was not requested."
   echo "Previous binaries (if any): ${BACKUP_DIR}"
   exit 0
 fi
-"${BRIDGE_BIN}" check-config --config "${CONFIG_PATH}"
-
 python3 "${PACKAGE_DIR}/scripts/render-launchagent.py" \
   --uid "${UID}" --home "${HOME}" --user "${USER}" --tmpdir "${TMPDIR}" \
   --binary "${BRIDGE_BIN}" --config "${CONFIG_PATH}" --log-dir "${LOG_DIR}" \
