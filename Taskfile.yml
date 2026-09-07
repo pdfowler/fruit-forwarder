@@ -39,6 +39,16 @@ tasks:
       - test -x .venv/bin/python
       - .venv/bin/python -m pytest -q
 
+  test:
+    deps: [test:go, test:ha]
+    cmds:
+      - |
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+          task test:native
+        else
+          echo "native EventKit tests skipped on $(uname -s); run task test on macOS for the complete local suite"
+        fi
+
   test:native:
     platforms: [darwin]
     cmds:

@@ -22,10 +22,15 @@ Before opening a pull request on macOS, run:
 
 ```sh
 task check
+task test
 go test -race ./...
 go vet ./...
 bash -n scripts/install-macos.sh
 ```
+
+`task test` runs the Go and Home Assistant suites everywhere and adds the
+native EventKit permission-boundary tests on macOS. On non-macOS hosts it
+reports that host-specific portion as skipped rather than pretending it ran.
 
 `task package:ha` produces the reviewable HACS tree under `dist/` and
 `scripts/check-hacs-export.sh` verifies that the export is deterministic. The
