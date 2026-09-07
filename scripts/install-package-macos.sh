@@ -25,6 +25,32 @@ PLIST_PATH="${HOME}/Library/LaunchAgents/${SERVICE_LABEL}.plist"
 PACKAGE_BRIDGE="${PACKAGE_DIR}/bin/icloud-reminders-bridge"
 PACKAGE_EVENTKIT="${PACKAGE_DIR}/bin/icloud-reminders-eventkit"
 
+reject_symlink_components() {
+  local candidate="$1"
+  local remaining="${candidate}"
+  local prefix="/"
+  while [[ -n "${remaining}" ]]; do
+    remaining="${remaining#/}"
+    [[ -n "${remaining}" ]] || break
+    local component="${remaining%%/*}"
+    if [[ "${remaining}" == "${component}" ]]; then
+      remaining=""
+    else
+      remaining="${remaining#*/}"
+    fi
+    [[ "${component}" == "." ]] && continue
+    [[ "${component}" != ".." ]] || {
+      echo "refusing a path containing ..: ${candidate}" >&2
+      exit 2
+    }
+    prefix="${prefix%/}/${component}"
+    if [[ -L "${prefix}" ]]; then
+      echo "refusing a path with a symlinked ancestor: ${candidate}" >&2
+      exit 2
+    fi
+  done
+}
+
 INSTALL_ONLY=false
 MIGRATE_HOME_CTRL=false
 for argument in "$@"; do
@@ -46,6 +72,10 @@ VERSION="$("${PACKAGE_BRIDGE}" version)"
   exit 2
 }
 
+for path in "${INSTALL_DIR}" "${BIN_DIR}" "${ROLLBACK_DIR}" "${LOG_DIR}" \
+  "${CONFIG_DIR}" "${CONFIG_PATH}" "${LEGACY_CONFIG_PATH}" "${PLIST_PATH}"; do
+  reject_symlink_components "${path}"
+done
 if [[ -L "${CONFIG_DIR}" || -L "${CONFIG_PATH}" ]]; then
   echo "refusing a symlinked configuration path" >&2
   exit 2
@@ -59,6 +89,7 @@ done
 mkdir -p "${BIN_DIR}" "${ROLLBACK_DIR}" "${CONFIG_DIR}" "${LOG_DIR}" "$(dirname "${PLIST_PATH}")"
 chmod 0700 "${INSTALL_DIR}" "${BIN_DIR}" "${ROLLBACK_DIR}"
 for path in "${INSTALL_DIR}" "${BIN_DIR}" "${ROLLBACK_DIR}" "${LOG_DIR}"; do
+  reject_symlink_components "${path}"
   if [[ -L "${path}" ]]; then
     echo "refusing a symlinked install path: ${path}" >&2
     exit 2

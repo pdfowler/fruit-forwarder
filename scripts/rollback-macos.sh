@@ -9,6 +9,32 @@ BRIDGE_BIN="${BIN_DIR}/icloud-reminders-bridge"
 EVENTKIT_BIN="${BIN_DIR}/icloud-reminders-eventkit"
 PLIST_PATH="${HOME}/Library/LaunchAgents/${SERVICE_LABEL}.plist"
 
+reject_symlink_components() {
+  local candidate="$1"
+  local remaining="${candidate}"
+  local prefix="/"
+  while [[ -n "${remaining}" ]]; do
+    remaining="${remaining#/}"
+    [[ -n "${remaining}" ]] || break
+    local component="${remaining%%/*}"
+    if [[ "${remaining}" == "${component}" ]]; then
+      remaining=""
+    else
+      remaining="${remaining#*/}"
+    fi
+    [[ "${component}" == "." ]] && continue
+    [[ "${component}" != ".." ]] || {
+      echo "refusing a path containing ..: ${candidate}" >&2
+      exit 2
+    }
+    prefix="${prefix%/}/${component}"
+    if [[ -L "${prefix}" ]]; then
+      echo "refusing a path with a symlinked ancestor: ${candidate}" >&2
+      exit 2
+    fi
+  done
+}
+
 if [[ $# -ne 1 ]]; then
   echo "usage: $0 /path/to/rollback/<version-timestamp>" >&2
   echo "available rollback directories:" >&2
@@ -21,6 +47,9 @@ case "${backup}" in
   "${ROLLBACK_DIR}"/*) ;;
   *) echo "rollback path must be inside ${ROLLBACK_DIR}" >&2; exit 2 ;;
 esac
+for path in "${INSTALL_DIR}" "${BIN_DIR}" "${ROLLBACK_DIR}" "${backup}" "${PLIST_PATH}"; do
+  reject_symlink_components "${path}"
+done
 [[ -d "${backup}" ]] || { echo "rollback directory not found: ${backup}" >&2; exit 2; }
 [[ ! -L "${backup}" && ! -L "${BIN_DIR}" ]] || {
   echo "rollback target or install bin directory must not be a symlink" >&2

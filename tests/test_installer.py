@@ -16,8 +16,10 @@ def test_package_installer_rejects_config_symlinks_before_staging():
 
 def test_package_installer_rejects_symlinked_install_paths():
     assert 'for path in "${INSTALL_DIR}" "${BIN_DIR}" "${ROLLBACK_DIR}" "${LOG_DIR}"' in INSTALLER
+    assert "reject_symlink_components" in INSTALLER
     rollback = (ROOT / "scripts/rollback-macos.sh").read_text()
     assert '[[ ! -L "${backup}" && ! -L "${BIN_DIR}" ]]' in rollback
+    assert "reject_symlink_components" in rollback
 
 
 def test_package_installer_validates_config_before_switching_binaries():
