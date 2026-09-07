@@ -26,7 +26,7 @@ Do not mark a row **proven** from unit-test output alone.
 | R5 | Secure local MCP | Partial | Stdio protocol tests, read-only tool omission, bounded input checks, MCPB validation | At least one independent MCP client, process/listener inspection and permission evidence |
 | R6 | Recoverable HA synchronization | Partial | Durable state journal, explicit recovery command, offline/calendar-failure tests | HA restart/crash/concurrent-edit tests with visible pending/error UX |
 | R7 | Approachable installation/upgrades | Partial | Versioned archive, installer, rollback scripts and setup documentation | Clean-user install, upgrade and rollback from the packaged artifact |
-| R8 | Privacy-preserving operation | Partial | Keychain stdin handling, file trust checks, redaction and bounded-state tests | Review of installed process args, backups, diagnostics, ACLs and signed release behavior |
+| R8 | Privacy-preserving operation | Partial | Keychain stdin handling, file trust checks, redaction and bounded-state tests; Home Assistant diagnostics exclusion test | Review of installed process args, backups, diagnostics, ACLs and signed release behavior |
 | R9 | Shareable open-source distribution | Partial | MIT license, CI, contributor/security docs, HACS export, macOS/MCP candidates | Authorized public repositories, release assets, support channel and ecosystem publication |
 | R10 | Honest compatibility/support claims | Partial | [compatibility matrix](compatibility.md), version checks and release manifest | Recorded supported-version runs, known-limitations review and support policy |
 
