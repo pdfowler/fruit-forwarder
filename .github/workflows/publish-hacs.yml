@@ -33,10 +33,7 @@ jobs:
           test "${GITHUB_REF_NAME}" = "v${version}"
           test -z "$(git status --porcelain)"
           test "${{ inputs.hacs_repository }}" != "${GITHUB_REPOSITORY}"
-          if git log --format='%an <%ae> | %cn <%ce>' | awk '$0 !~ /pfowler@icloud.com/ { found=1 } END { exit found ? 0 : 1 }'; then
-            echo "found a commit without pfowler@icloud.com author/committer attribution" >&2
-            exit 1
-          fi
+          scripts/check-git-attribution.sh
 
       - name: Validate the deterministic HACS export
         run: |

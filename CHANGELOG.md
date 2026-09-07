@@ -28,6 +28,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   Home Assistant.
 - Pause automatic mutation replay after an ambiguous EventKit outcome and
   provide explicit operator recovery choices.
+- Enforce the requested `pfowler@icloud.com` author and committer identity
+  across the complete Git history during local checks and publication workflows.
 
 ## 0.1.0 — candidate
 

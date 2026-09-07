@@ -75,10 +75,7 @@ jobs:
           version="$(tr -d '[:space:]' < release/VERSION)"
           test "${GITHUB_REF_NAME}" = "v${version}"
           test -z "$(git status --porcelain)"
-          if git log --format='%an <%ae> | %cn <%ce>' | awk '$0 !~ /pfowler@icloud.com/ { found=1 } END { exit found ? 0 : 1 }'; then
-            echo "found a commit without pfowler@icloud.com author/committer attribution" >&2
-            exit 1
-          fi
+          scripts/check-git-attribution.sh
       - name: Verify release manifest source revision
         run: |
           python3 - <<'PY'

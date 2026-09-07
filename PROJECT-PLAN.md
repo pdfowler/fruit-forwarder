@@ -179,7 +179,7 @@ The current repository uses the existing top-level directories rather than perfo
 | `task publish:*` | Explicit ecosystem publication of previously verified artifacts; no implicit household deployment |
 | `task install:local` | Explicit installation on a specified Mac using a verified artifact |
 
-The initial `check`, `package:ha`, `package:macos`, `package:mcp`, `release:check` and `release:prepare` interfaces are implemented in `Taskfile.yml`; the package targets now build a versioned macOS tarball, a validated MCPB and a deterministic HACS export, while signing, publication and live installation remain explicit maintainer actions. Run independent tests/builds in parallel; express real dependencies in order. A shared protocol or fixture change must invalidate checks for Go, HA and MCP consumers. A shared native change must rebuild both Mac and MCP distributions. Changes limited to HA should not require an unrelated native rebuild unless compatibility or release policy requires it.
+The initial `check`, `package:ha`, `package:macos`, `package:mcp`, `release:check` and `release:prepare` interfaces are implemented in `Taskfile.yml`; the package targets now build a versioned macOS tarball, a validated MCPB and a deterministic HACS export, while signing, publication and live installation remain explicit maintainer actions. `task check` also runs `scripts/check-git-attribution.sh`, which verifies the requested author and committer identity across all refs before a candidate can pass. Run independent tests/builds in parallel; express real dependencies in order. A shared protocol or fixture change must invalidate checks for Go, HA and MCP consumers. A shared native change must rebuild both Mac and MCP distributions. Changes limited to HA should not require an unrelated native rebuild unless compatibility or release policy requires it.
 
 Use Go's build cache, appropriate dependency caches, and declared source/output checks for deterministic builds. Include OS, architecture, compiler/SDK version, dependency locks, entitlements and relevant build flags in cache decisions. Never treat cached output as evidence for live permissions, installed service health or signing/notarization status. Publication, token operations, signing side effects and live installation must not be skipped based on task-output caching. Keep credentials and household fixtures out of caches.
 
@@ -206,7 +206,8 @@ Use separate read/test permissions for pull requests and restricted credentials 
 - HA fixes have one authoritative source; distribution drift is detected.
 - Mac/MCP packages use the same shared implementation and do not install conflicting native services.
 - Partial publication can be resumed safely, and the documented compatible release set can be restored.
-- CI invokes the same build/test entry points contributors use; live validation gates remain separate.
+- CI invokes the same provenance and build/test entry points contributors use where
+  the runner supports them; live validation gates remain separate.
 
 Tooling references: [Task guide](https://taskfile.dev/docs/guide), [Task schema](https://taskfile.dev/docs/reference/schema), [Nx project configuration](https://nx.dev/docs/reference/project-configuration), and [Nx caching inputs](https://nx.dev/docs/reference/inputs). The initial Task recommendation is a project-fit decision, not a claim that the ecosystems require it.
 

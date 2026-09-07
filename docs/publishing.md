@@ -8,7 +8,9 @@ environment with reviewer approval.
 Before running it:
 
 1. Confirm the source revision is clean and all commits are authored and
-   committed as `pfowler@icloud.com`.
+   committed as `pfowler@icloud.com`. `task check` and
+   `scripts/check-git-attribution.sh` perform this check across all refs; the
+   publication workflows repeat it on the tagged checkout.
 2. Create the matching annotated version tag (`v<release/VERSION>`) and run the
    workflow from that tag; the workflow refuses branch-based publication.
 3. Run `task release:prepare` on macOS and inspect the release manifest,

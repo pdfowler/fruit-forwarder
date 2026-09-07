@@ -9,7 +9,11 @@ tasks:
     deps: [check]
 
   check:
-    deps: [format:check, test:go, test:ha, metadata:check, security:scan]
+    deps: [format:check, test:go, test:ha, metadata:check, provenance:check, security:scan]
+
+  provenance:check:
+    cmds:
+      - scripts/check-git-attribution.sh
 
   security:scan:
     cmds:
@@ -26,7 +30,7 @@ tasks:
       - python3 -m json.tool config.example.json >/dev/null
       - python3 -m json.tool homeassistant/custom_components/icloud_reminders_bridge/manifest.json >/dev/null
       - python3 -m json.tool release/compatibility.json >/dev/null
-      - bash -n scripts/install-macos.sh scripts/install-package-macos.sh scripts/uninstall-macos.sh scripts/rollback-macos.sh scripts/export-hacs.sh scripts/render-mcp-server-json.sh scripts/check-identifiers.sh
+      - bash -n scripts/install-macos.sh scripts/install-package-macos.sh scripts/uninstall-macos.sh scripts/rollback-macos.sh scripts/export-hacs.sh scripts/render-mcp-server-json.sh scripts/check-identifiers.sh scripts/check-git-attribution.sh
       - bash -n scripts/package-ha.sh scripts/package-macos.sh scripts/package-mcpb.sh scripts/check-hacs-export.sh scripts/check-ha-package.sh scripts/check-macos-package.sh scripts/check-mcp-package.sh
 
   test:go:
