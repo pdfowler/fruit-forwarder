@@ -76,15 +76,10 @@ jobs:
           test "${GITHUB_REF_NAME}" = "v${version}"
           test -z "$(git status --porcelain)"
           scripts/check-git-attribution.sh
-      - name: Verify release manifest source revision
+      - name: Rebuild and verify the unified release manifest
         run: |
-          python3 - <<'PY'
-          import json, subprocess
-          manifest = json.load(open("dist/release-manifest.json"))
-          head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-          if manifest["source_revision"] != head or manifest["source_dirty"]:
-              raise SystemExit("release manifest does not describe the checked-out clean source revision")
-          PY
+          python3 scripts/render-release-manifest.py
+          scripts/check-release-manifest.py
       - name: Create GitHub release with immutable candidate assets
         env:
           GH_TOKEN: ${{ github.token }}

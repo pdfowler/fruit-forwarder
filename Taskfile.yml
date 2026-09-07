@@ -79,6 +79,7 @@ tasks:
       - python3 -c 'import ast; ast.parse(open("scripts/package-hacs.py").read())'
       - python3 -c 'import ast; ast.parse(open("scripts/package-tar.py").read())'
       - python3 -c 'import ast; ast.parse(open("scripts/normalize-zip.py").read())'
+      - python3 -c 'import ast; ast.parse(open("scripts/check-release-manifest.py").read())'
       - scripts/check-identifiers.sh
 
   package:ha:
@@ -132,3 +133,4 @@ tasks:
       - |
         mkdir -p dist
         python3 scripts/render-release-manifest.py
+      - scripts/check-release-manifest.py
