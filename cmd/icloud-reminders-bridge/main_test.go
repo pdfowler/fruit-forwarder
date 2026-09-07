@@ -195,3 +195,48 @@ func TestRecoverCommandRejectsMissingResolution(t *testing.T) {
 		t.Fatal("recover accepted an implicit resolution")
 	}
 }
+
+func TestReportStatusAcceptsReadyConfiguration(t *testing.T) {
+	dir := t.TempDir()
+	helper := filepath.Join(dir, "eventkit-helper")
+	if err := os.WriteFile(helper, []byte("#!/bin/sh\nexit 0\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{
+		BridgeID:       "mac",
+		EventKitHelper: helper,
+		StatePath:      filepath.Join(dir, "state.json"),
+	}
+	if err := reportStatus(cfg, filepath.Join(dir, "config.json"), false, true); err != nil {
+		t.Fatalf("ready status returned an error: %v", err)
+	}
+}
+
+func TestReportStatusRejectsUnsafeHelper(t *testing.T) {
+	cfg := &config.Config{
+		BridgeID:       "mac",
+		EventKitHelper: filepath.Join(t.TempDir(), "missing-helper"),
+		StatePath:      filepath.Join(t.TempDir(), "state.json"),
+	}
+	if err := reportStatus(cfg, "config.json", false, true); err == nil || !strings.Contains(err.Error(), "helper") {
+		t.Fatalf("missing helper was not rejected: %v", err)
+	}
+}
+
+func TestReportStatusBlocksUncertainCommand(t *testing.T) {
+	dir := t.TempDir()
+	helper := filepath.Join(dir, "eventkit-helper")
+	if err := os.WriteFile(helper, []byte("#!/bin/sh\nexit 0\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	statePath := filepath.Join(dir, "state.json")
+	if err := (&state.State{InFlight: &model.Command{
+		ID: "command-uncertain", Action: "complete", ListID: "list", Item: model.Item{UID: "item"},
+	}}).Save(statePath); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{BridgeID: "mac", EventKitHelper: helper, StatePath: statePath}
+	if err := reportStatus(cfg, "config.json", false, true); err == nil || !strings.Contains(err.Error(), "uncertain") {
+		t.Fatalf("uncertain command was not surfaced: %v", err)
+	}
+}

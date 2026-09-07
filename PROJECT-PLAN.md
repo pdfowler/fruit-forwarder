@@ -339,7 +339,7 @@ Design a separate milestone for authenticated network transport: supported MCP a
 **Priority: release blocker. Dependencies: A and project identity.**
 
 - Design a guided first-run experience: prerequisites, separate permission grants, discovery, scope selection, HA pairing, MCP configuration, connectivity check and a clear success state.
-- Add `status`/`doctor`, version reporting and actionable exit codes. Keep config validation distinct from live access checks.
+- Add `status`/`doctor`, version reporting and actionable exit codes. Keep config validation distinct from live access checks; the CLI now reports helper, Keychain, state, and unresolved-command health without exposing reminder contents, with focused diagnostics tests.
 - Discovery honors the configured `eventkit_helper_path` (with an explicit CLI override and a default only when no config exists); keep the regression test and include the configured path in installed-artifact acceptance.
 - Render LaunchAgent configuration safely for spaces and XML/shell-special characters in user paths. Validate inputs and environment assumptions.
 - Make installation transactional: stage builds, validate binaries/signatures, preserve a previous version, switch atomically, verify service health and support rollback.
