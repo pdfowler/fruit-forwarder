@@ -71,6 +71,22 @@ be paired with the installed acceptance records below.
 - This was read-only observation. No service, permission, configuration,
   Keychain item, or household data was changed.
 
+### Home Assistant live inspection (2026-09-07 13:57 PDT)
+
+- The approved HA-MCP endpoint reported Home Assistant `2026.9.1` in `RUNNING`
+  state. The configured `icloud_reminders_bridge` domain has one loaded entry,
+  titled `iCloud Reminders on Dean`.
+- That live entry reports `supports_reconfigure: false`, while the candidate
+  source implements a reconfigure flow. This is evidence that the candidate
+  source has not yet been installed and verified in this HA instance; it is not
+  evidence that the source flow works against a live entry.
+- The live entry exposes one bridge-owned todo entity and its current item
+  query returned six completed items. No bridge-owned calendar entity was
+  found; the eight visible calendar entities belong to other integrations or
+  sources and were not attributed to Fruit Forwarder.
+- The inspection was read-only. No todo item, integration, permission,
+  configuration, or service state was changed.
+
 ## Installed acceptance record template
 
 Create one redacted record per run, for example under a maintainer-controlled
