@@ -30,6 +30,7 @@ helper_files = [
     "Taskfile.yml",
     "scripts/package-macos.sh",
     "scripts/package-mcpb.sh",
+    ".github/workflows/ci.yml",
 ]
 
 missing = []

@@ -51,7 +51,7 @@ jobs:
             -Xlinker "$PWD/deployment/eventkit-helper-Info.plist" \
             -o build/icloud-reminders-eventkit
           codesign --force --sign - --options runtime \
-            --identifier com.example.icloud-reminders-bridge.eventkit \
+            --identifier com.pdfowler.fruitforwarder.eventkit \
             --entitlements deployment/reminders.entitlements \
             build/icloud-reminders-eventkit
           codesign --verify --strict build/icloud-reminders-eventkit
