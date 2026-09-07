@@ -47,19 +47,11 @@ staging="$(mktemp -d "${TMPDIR:-/tmp}/fruit-forwarder-mcpb.XXXXXX")"
 trap 'rm -rf "${staging}"' EXIT
 mkdir -p "${staging}/server" "${staging}/brand" "${output_dir}"
 
-go build -trimpath -ldflags "-X main.version=${version}" \
-  -o "${staging}/server/fruit-forwarder-mcp" \
-  "${repo_dir}/cmd/icloud-reminders-bridge"
-swiftc -O -parse-as-library "${repo_dir}/eventkit-helper/main.swift" \
-  -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
-  -Xlinker "${repo_dir}/deployment/eventkit-helper-Info.plist" \
-  -o "${staging}/server/icloud-reminders-eventkit"
-codesign --force --sign - --options runtime \
-  --identifier com.pdfowler.fruitforwarder.eventkit \
-  --entitlements "${repo_dir}/deployment/reminders.entitlements" \
-  "${staging}/server/icloud-reminders-eventkit"
-FRUIT_FORWARDER_EVENTKIT_BINARY="${staging}/server/icloud-reminders-eventkit" \
-  python3 "${repo_dir}/scripts/test-native-calendar.py"
+"${repo_dir}/scripts/build-macos.sh" \
+  "${version}" "${staging}" "fruit-forwarder-mcp"
+mv "${staging}/bin/fruit-forwarder-mcp" "${staging}/server/fruit-forwarder-mcp"
+mv "${staging}/bin/icloud-reminders-eventkit" "${staging}/server/icloud-reminders-eventkit"
+rmdir "${staging}/bin"
 
 sed -e "s|@@VERSION@@|${version}|g" \
   "${repo_dir}/packaging/mcp/manifest.json.in" > "${staging}/manifest.json"

@@ -18,7 +18,8 @@ Build and inspect a candidate on macOS:
 task package:mcp
 ```
 
-This uses the pinned `@anthropic-ai/mcpb` CLI (or `MCPB_BIN`), validates the
+This uses the shared `scripts/build-macos.sh` native build path plus the pinned
+`@anthropic-ai/mcpb` CLI (or `MCPB_BIN`), validates the
 MCPB manifest, emits `dist/mcp/fruit-forwarder-mcp-<version>.mcpb`, and writes a
 SHA-256 sidecar plus a candidate `server.json` using the planned GitHub release
 URL. `scripts/check-mcp-package.sh` then verifies the bundle manifest, sidecar,
