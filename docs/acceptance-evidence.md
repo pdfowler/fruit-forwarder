@@ -27,8 +27,8 @@ Do not mark a row **proven** from unit-test output alone.
 | R6 | Recoverable HA synchronization | Partial | Durable state journal, explicit mutation recovery, persisted queue-epoch fencing, offline/calendar-failure tests | HA restart/crash/concurrent-edit and backup/restore tests with visible pending/error UX |
 | R7 | Approachable installation/upgrades | Partial | Versioned archive, installer, rollback scripts, setup documentation, tested `status`/`doctor` diagnostics, special-path LaunchAgent rendering test, and pre-switch install-path/configuration trust tests | Clean-user install, upgrade and rollback from the packaged artifact |
 | R8 | Privacy-preserving operation | Partial | Keychain stdin handling, file trust checks, bounded-state tests including native helper output limits; Home Assistant diagnostics exclusion test | Review of installed process args, backups, diagnostics, ACLs and signed release behavior |
-| R9 | Shareable open-source distribution | Partial | MIT license, CI, contributor/security docs, deterministic HACS export, guarded HACS and MCP publication workflows, macOS/MCP candidates, complete-history attribution check | Authorized public repositories, release assets, support channel and ecosystem publication |
-| R10 | Honest compatibility/support claims | Partial | [compatibility matrix](compatibility.md), version checks and release manifest | Recorded supported-version runs, known-limitations review and support policy |
+| R9 | Shareable open-source distribution | Partial | MIT license, CI, contributor/security docs, `SUPPORT.md`, deterministic HACS export, guarded HACS and MCP publication workflows, macOS/MCP candidates, complete-history attribution check | Authorized public repositories, release assets, and ecosystem publication |
+| R10 | Honest compatibility/support claims | Partial | [compatibility matrix](compatibility.md), `SUPPORT.md`, version checks and release manifest | Recorded supported-version runs and known-limitations review |
 
 ## Current candidate evidence
 
