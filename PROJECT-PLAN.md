@@ -218,7 +218,11 @@ Tooling references: [Task guide](https://taskfile.dev/docs/guide), [Task schema]
 2. Capture responsible process, code-signing identity, authorization status, helper lifetime and launch environment without exposing reminder contents.
 3. Verify whether the current `launchctl asuser` wrapper is necessary and whether it actually addresses the failure. Do not preserve an unverified workaround as the architecture.
 4. Evaluate a persistent native service versus short-lived helper invocations. Base the choice on TCC stability, request cancellation, synchronization cost, memory and serialization—not aesthetics.
-5. Replace `com.example` identifiers with the chosen stable identity. Align Go executable, helper, application bundle, entitlements, launch service and Keychain access strategy.
+5. Use the chosen stable maintainer identity `com.pdfowler.fruitforwarder` (and
+   `com.pdfowler.fruitforwarder.eventkit` for the helper). Align the Go
+   executable, helper, application bundle, entitlements, launch service and
+   Keychain access strategy; retain explicit legacy-config compatibility for
+   the prototype `com.example.icloud-reminders-bridge` service.
 6. Make Calendar and Reminders opt-in independent. Invalid or empty-scope requests should not unexpectedly trigger account permission prompts.
 7. Provide bounded, actionable errors for denied access, unavailable services, locked Keychain, malformed helper output and timeouts.
 8. Add a diagnostic command that reports versions, process health and access status without requesting additional permissions by default.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVICE_LABEL="com.example.icloud-reminders-bridge"
+SERVICE_LABEL="com.pdfowler.fruitforwarder"
 INSTALL_DIR="${HOME}/Library/Application Support/icloud-reminders-bridge"
 BIN_DIR="${INSTALL_DIR}/bin"
 ROLLBACK_DIR="${INSTALL_DIR}/rollback"

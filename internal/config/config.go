@@ -113,7 +113,7 @@ func (c *Config) Validate() error {
 		}
 	}
 	if c.KeychainService == "" {
-		c.KeychainService = "com.example.icloud-reminders-bridge"
+		c.KeychainService = "com.pdfowler.fruitforwarder"
 	}
 	if !boundedString(c.KeychainService, maxStringLength) {
 		return errors.New("keychain_service is too long")

@@ -55,7 +55,7 @@ swiftc -O -parse-as-library "${repo_dir}/eventkit-helper/main.swift" \
   -Xlinker "${repo_dir}/deployment/eventkit-helper-Info.plist" \
   -o "${staging}/server/icloud-reminders-eventkit"
 codesign --force --sign - --options runtime \
-  --identifier com.example.icloud-reminders-bridge.eventkit \
+  --identifier com.pdfowler.fruitforwarder.eventkit \
   --entitlements "${repo_dir}/deployment/reminders.entitlements" \
   "${staging}/server/icloud-reminders-eventkit"
 FRUIT_FORWARDER_EVENTKIT_BINARY="${staging}/server/icloud-reminders-eventkit" \

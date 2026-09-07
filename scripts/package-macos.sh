@@ -27,14 +27,14 @@ swiftc -O -parse-as-library "${repo_dir}/eventkit-helper/main.swift" \
   -Xlinker "${repo_dir}/deployment/eventkit-helper-Info.plist" \
   -o "${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-eventkit"
 codesign --force --sign - --options runtime \
-  --identifier com.example.icloud-reminders-bridge.eventkit \
+  --identifier com.pdfowler.fruitforwarder.eventkit \
   --entitlements "${repo_dir}/deployment/reminders.entitlements" \
   "${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-eventkit"
 codesign --verify --strict "${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-eventkit"
 FRUIT_FORWARDER_EVENTKIT_BINARY="${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-eventkit" \
   python3 "${repo_dir}/scripts/test-native-calendar.py"
 
-cp "${repo_dir}/deployment/com.example.icloud-reminders-bridge.plist.tmpl" \
+cp "${repo_dir}/deployment/com.pdfowler.fruitforwarder.plist.tmpl" \
   "${staging}/fruit-forwarder-macos-${version}/deployment/"
 cp "${repo_dir}/config.example.json" "${staging}/fruit-forwarder-macos-${version}/"
 cp "${repo_dir}/LICENSE" "${staging}/fruit-forwarder-macos-${version}/"

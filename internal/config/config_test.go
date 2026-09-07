@@ -36,6 +36,16 @@ func TestSyncPreflight(t *testing.T) {
 	}
 }
 
+func TestValidateUsesStableFruitForwarderKeychainIdentity(t *testing.T) {
+	cfg := Config{BridgeID: "mac"}
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("Validate() = %v", err)
+	}
+	if cfg.KeychainService != "com.pdfowler.fruitforwarder" {
+		t.Fatalf("KeychainService = %q, want stable Fruit Forwarder identity", cfg.KeychainService)
+	}
+}
+
 func TestValidateSecurityAndAllowlist(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

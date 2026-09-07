@@ -30,7 +30,7 @@ required = {
     root + "README.md",
     root + "CHANGELOG.md",
     root + "LICENSE",
-    root + "deployment/com.example.icloud-reminders-bridge.plist.tmpl",
+    root + "deployment/com.pdfowler.fruitforwarder.plist.tmpl",
     root + "scripts/install-package-macos.sh",
     root + "scripts/rollback-macos.sh",
     root + "scripts/uninstall-macos.sh",

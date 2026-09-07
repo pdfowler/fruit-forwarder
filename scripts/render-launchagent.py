@@ -20,7 +20,7 @@ def main() -> None:
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
 
-    label = "com.example.icloud-reminders-bridge"
+    label = "com.pdfowler.fruitforwarder"
     plist = {
         "Label": label,
         "ProgramArguments": [

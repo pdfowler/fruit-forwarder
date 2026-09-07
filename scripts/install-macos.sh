@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVICE_LABEL="com.example.icloud-reminders-bridge"
+SERVICE_LABEL="com.pdfowler.fruitforwarder"
+LEGACY_SERVICE_LABEL="com.example.icloud-reminders-bridge"
 SERVICE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 INSTALL_DIR="${HOME}/Library/Application Support/icloud-reminders-bridge"
 BIN_DIR="${INSTALL_DIR}/bin"
@@ -12,6 +13,7 @@ CONFIG_DIR="${HOME}/.config/icloud-reminders-bridge"
 CONFIG_PATH="${CONFIG_DIR}/config.json"
 LOG_DIR="${HOME}/Library/Logs/icloud-reminders-bridge"
 PLIST_PATH="${HOME}/Library/LaunchAgents/${SERVICE_LABEL}.plist"
+LEGACY_PLIST_PATH="${HOME}/Library/LaunchAgents/${LEGACY_SERVICE_LABEL}.plist"
 
 mkdir -p "${SERVICE_DIR}/build" "${BIN_DIR}" "${ROLLBACK_DIR}" "${CONFIG_DIR}" "${LOG_DIR}" "$(dirname "${PLIST_PATH}")"
 chmod 0700 "${INSTALL_DIR}" "${BIN_DIR}"
@@ -94,6 +96,8 @@ chmod 0600 "${PLIST_PATH}.new"
 mv "${PLIST_PATH}.new" "${PLIST_PATH}"
 
 launchctl bootout "gui/${UID}/${SERVICE_LABEL}" 2>/dev/null || true
+launchctl bootout "gui/${UID}/${LEGACY_SERVICE_LABEL}" 2>/dev/null || true
+rm -f "${LEGACY_PLIST_PATH}"
 # launchd removes an unloaded service asynchronously. Wait for that removal so
 # an immediate reinstall does not fail with a transient bootstrap error 5.
 for _ in {1..20}; do

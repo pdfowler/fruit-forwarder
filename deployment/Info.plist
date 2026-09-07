@@ -13,7 +13,7 @@
   <key>CFBundleExecutable</key>
   <string>icloud-reminders-bridge</string>
   <key>CFBundleIdentifier</key>
-  <string>com.example.icloud-reminders-bridge</string>
+  <string>com.pdfowler.fruitforwarder</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>

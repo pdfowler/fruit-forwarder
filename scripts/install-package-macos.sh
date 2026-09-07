@@ -7,7 +7,8 @@ if [[ "${OSTYPE:-}" != darwin* ]]; then
 fi
 
 PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SERVICE_LABEL="com.example.icloud-reminders-bridge"
+SERVICE_LABEL="com.pdfowler.fruitforwarder"
+LEGACY_SERVICE_LABEL="com.example.icloud-reminders-bridge"
 INSTALL_DIR="${HOME}/Library/Application Support/icloud-reminders-bridge"
 BIN_DIR="${INSTALL_DIR}/bin"
 ROLLBACK_DIR="${INSTALL_DIR}/rollback"
@@ -17,6 +18,7 @@ CONFIG_DIR="${HOME}/.config/icloud-reminders-bridge"
 CONFIG_PATH="${CONFIG_DIR}/config.json"
 LOG_DIR="${HOME}/Library/Logs/icloud-reminders-bridge"
 PLIST_PATH="${HOME}/Library/LaunchAgents/${SERVICE_LABEL}.plist"
+LEGACY_PLIST_PATH="${HOME}/Library/LaunchAgents/${LEGACY_SERVICE_LABEL}.plist"
 PACKAGE_BRIDGE="${PACKAGE_DIR}/bin/icloud-reminders-bridge"
 PACKAGE_EVENTKIT="${PACKAGE_DIR}/bin/icloud-reminders-eventkit"
 
@@ -82,6 +84,8 @@ chmod 0600 "${PLIST_PATH}.new"
 mv "${PLIST_PATH}.new" "${PLIST_PATH}"
 
 launchctl bootout "gui/${UID}/${SERVICE_LABEL}" 2>/dev/null || true
+launchctl bootout "gui/${UID}/${LEGACY_SERVICE_LABEL}" 2>/dev/null || true
+rm -f "${LEGACY_PLIST_PATH}"
 for _ in {1..20}; do
   if ! launchctl print "gui/${UID}/${SERVICE_LABEL}" >/dev/null 2>&1; then break; fi
   sleep 0.25

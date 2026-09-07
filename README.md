@@ -76,9 +76,10 @@ recovery steps in [docs/setup.md](docs/setup.md).
 The pairing token is stored in the macOS login Keychain. Do not commit the
 runtime config, state file, logs, or token.
 
-The example uses `com.example.icloud-reminders-bridge` as a neutral reverse-DNS
-service identifier. Change it consistently in the config and deployment
-template if you publish your own branded build.
+The packaged build uses the stable reverse-DNS service identifier
+`com.pdfowler.fruitforwarder`. Existing prototype configs that explicitly use
+`com.example.icloud-reminders-bridge` remain valid; do not delete the old
+Keychain item until the replacement installation has been verified.
 
 ## Configuration
 
