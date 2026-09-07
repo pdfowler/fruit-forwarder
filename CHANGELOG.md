@@ -10,6 +10,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   through the same staged native build and boundary-test path.
 - Have macOS CI invoke the shared Task targets instead of maintaining a second
   native build recipe.
+- Harden the guarded HACS publication workflow against shell interpolation and
+  accidental destination repositories.
 - Align the Go module path with the planned public `fruit-forwarder`
   repository so downstream builds and release metadata use one canonical
   source identity.

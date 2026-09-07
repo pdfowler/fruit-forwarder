@@ -28,11 +28,14 @@ jobs:
           fetch-depth: 0
 
       - name: Verify the tag, version, and source history
+        env:
+          HACS_REPOSITORY: ${{ inputs.hacs_repository }}
         run: |
           version="$(tr -d '[:space:]' < release/VERSION)"
           test "${GITHUB_REF_NAME}" = "v${version}"
           test -z "$(git status --porcelain)"
-          test "${{ inputs.hacs_repository }}" != "${GITHUB_REPOSITORY}"
+          test "${HACS_REPOSITORY}" != "${GITHUB_REPOSITORY}"
+          test "${HACS_REPOSITORY}" = "${GITHUB_REPOSITORY_OWNER}/ha-fruit-forwarder"
           scripts/check-git-attribution.sh
 
       - name: Validate the deterministic HACS export
