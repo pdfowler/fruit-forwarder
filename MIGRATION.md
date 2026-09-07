@@ -7,9 +7,24 @@ versioned together here.
 
 The standalone distribution uses the maintainer-owned reverse-DNS identity
 `com.pdfowler.fruitforwarder` (with the EventKit helper identity
-`com.pdfowler.fruitforwarder.eventkit`). Existing users of the prototype
-identity `com.example.icloud-reminders-bridge` should keep their current
-runtime config and Keychain item while testing the new build. The installer
-stops the legacy LaunchAgent before activating the stable one; an existing
-config that explicitly names the legacy Keychain service remains usable.
-Never copy a runtime config, state file, or pairing token into this repository.
+`com.pdfowler.fruitforwarder.eventkit`). Existing users of the former
+`home-ctrl` deployment (`net.pdfowler.icloud-reminders-bridge`) or the earlier
+prototype identity (`com.example.icloud-reminders-bridge`) should keep their
+current runtime config and Keychain item while testing the new build. The
+installer stops those legacy LaunchAgents only when the explicit
+`--migrate-home-ctrl` option is supplied, then activates the stable one. The
+migration copies the old config into the standalone config path and preserves
+its explicit legacy Keychain and state paths, so the existing pairing and
+acknowledgement ledger remain available. Review the copied config before
+activation.
+
+Never copy a pairing token into this repository. Runtime config and state stay
+on the Mac.
+
+For a packaged migration on Dean:
+
+```sh
+scripts/install-package-macos.sh --migrate-home-ctrl --install-only
+# Review ~/.config/icloud-reminders-bridge/config.json, then activate:
+scripts/install-package-macos.sh --migrate-home-ctrl
+```

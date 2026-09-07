@@ -153,6 +153,12 @@ maintainer signing credentials are supplied to the release workflow.
 commands prepare artifacts only; publishing a GitHub release, HACS repository,
 or MCP Registry entry remains an explicit maintainer step.
 
+If this Mac still runs the former `home-ctrl` deployment, pass
+`--migrate-home-ctrl` to the packaged installer. It copies the existing
+configuration, preserves its explicit Keychain/state paths, and retires the
+legacy LaunchAgent only when activation is requested. Review the copied config
+before the second installer invocation; do not run both services at once.
+
 To stop and remove only the installed service files while preserving household
 configuration, pairing, state, rollback copies, and logs, run the bundled
 `scripts/uninstall-macos.sh`. Credential/state removal is intentionally a

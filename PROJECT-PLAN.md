@@ -347,7 +347,7 @@ Design a separate milestone for authenticated network transport: supported MCP a
 - Support a documented stop/uninstall process that preserves user data by default and separates optional credential/state removal from software removal.
 - Build and test supported architectures. Publish checksums and provenance; decide on Developer ID signing/notarization and acquire credentials only through an explicit maintainer decision.
 - Implement the monorepo and generated HACS distribution in sections 4.1–4.2; validate current requirements and the native MCP package route before promising installability.
-- Migrate the original home-ctrl deployment only after a verified standalone candidate exists. Inventory exact paths and identities, back up narrowly, stop the old writer, switch one deployment, verify and retain a rollback path.
+- Migrate the original home-ctrl deployment only after a verified standalone candidate exists. Inventory exact paths and identities, back up narrowly, stop the old writer, switch one deployment, verify and retain a rollback path. The packaged installer now has an explicit `--migrate-home-ctrl` preparation/activation path for the known legacy service and config locations; the actual Dean cutover remains a recorded external acceptance step.
 
 **Done when:** an independent user installs from release artifacts without source-level troubleshooting, and upgrade/rollback preserves their pairing and entities.
 

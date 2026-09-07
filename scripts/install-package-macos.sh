@@ -8,7 +8,10 @@ fi
 
 PACKAGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVICE_LABEL="com.pdfowler.fruitforwarder"
-LEGACY_SERVICE_LABEL="com.example.icloud-reminders-bridge"
+LEGACY_SERVICE_LABELS=(
+  "net.pdfowler.icloud-reminders-bridge"
+  "com.example.icloud-reminders-bridge"
+)
 INSTALL_DIR="${HOME}/Library/Application Support/icloud-reminders-bridge"
 BIN_DIR="${INSTALL_DIR}/bin"
 ROLLBACK_DIR="${INSTALL_DIR}/rollback"
@@ -16,11 +19,21 @@ BRIDGE_BIN="${BIN_DIR}/icloud-reminders-bridge"
 EVENTKIT_BIN="${BIN_DIR}/icloud-reminders-eventkit"
 CONFIG_DIR="${HOME}/.config/icloud-reminders-bridge"
 CONFIG_PATH="${CONFIG_DIR}/config.json"
+LEGACY_CONFIG_PATH="${HOME}/.config/home-ctrl/icloud-reminders-bridge/config.json"
 LOG_DIR="${HOME}/Library/Logs/icloud-reminders-bridge"
 PLIST_PATH="${HOME}/Library/LaunchAgents/${SERVICE_LABEL}.plist"
-LEGACY_PLIST_PATH="${HOME}/Library/LaunchAgents/${LEGACY_SERVICE_LABEL}.plist"
 PACKAGE_BRIDGE="${PACKAGE_DIR}/bin/icloud-reminders-bridge"
 PACKAGE_EVENTKIT="${PACKAGE_DIR}/bin/icloud-reminders-eventkit"
+
+INSTALL_ONLY=false
+MIGRATE_HOME_CTRL=false
+for argument in "$@"; do
+  case "${argument}" in
+    --install-only) INSTALL_ONLY=true ;;
+    --migrate-home-ctrl) MIGRATE_HOME_CTRL=true ;;
+    *) echo "unknown option: ${argument}" >&2; exit 2 ;;
+  esac
+done
 
 [[ -x "${PACKAGE_BRIDGE}" && -x "${PACKAGE_EVENTKIT}" ]] || {
   echo "package is missing executable bridge files" >&2
@@ -63,12 +76,18 @@ if [[ -L "${CONFIG_DIR}" || -L "${CONFIG_PATH}" ]]; then
   exit 2
 fi
 if [[ ! -f "${CONFIG_PATH}" ]]; then
-  install -m 0600 "${PACKAGE_DIR}/config.example.json" "${CONFIG_PATH}"
-  echo "Created ${CONFIG_PATH}; add exact IDs, then rerun this installer." >&2
-  exit 2
+  if [[ "${MIGRATE_HOME_CTRL}" == true && -f "${LEGACY_CONFIG_PATH}" ]]; then
+    [[ ! -L "${LEGACY_CONFIG_PATH}" ]] || { echo "refusing a symlinked legacy configuration" >&2; exit 2; }
+    install -m 0600 "${LEGACY_CONFIG_PATH}" "${CONFIG_PATH}"
+    echo "Migrated the existing home-ctrl configuration; its explicit Keychain and state paths were preserved." >&2
+  else
+    install -m 0600 "${PACKAGE_DIR}/config.example.json" "${CONFIG_PATH}"
+    echo "Created ${CONFIG_PATH}; add exact IDs, then rerun this installer." >&2
+    exit 2
+  fi
 fi
 chmod 0600 "${CONFIG_PATH}"
-if [[ "${1:-}" == "--install-only" ]]; then
+if [[ "${INSTALL_ONLY}" == true ]]; then
   echo "Installed Fruit Forwarder ${VERSION}; LaunchAgent activation was not requested."
   echo "Previous binaries (if any): ${BACKUP_DIR}"
   exit 0
@@ -84,8 +103,10 @@ chmod 0600 "${PLIST_PATH}.new"
 mv "${PLIST_PATH}.new" "${PLIST_PATH}"
 
 launchctl bootout "gui/${UID}/${SERVICE_LABEL}" 2>/dev/null || true
-launchctl bootout "gui/${UID}/${LEGACY_SERVICE_LABEL}" 2>/dev/null || true
-rm -f "${LEGACY_PLIST_PATH}"
+for legacy_label in "${LEGACY_SERVICE_LABELS[@]}"; do
+  launchctl bootout "gui/${UID}/${legacy_label}" 2>/dev/null || true
+  rm -f "${HOME}/Library/LaunchAgents/${legacy_label}.plist"
+done
 for _ in {1..20}; do
   if ! launchctl print "gui/${UID}/${SERVICE_LABEL}" >/dev/null 2>&1; then break; fi
   sleep 0.25
