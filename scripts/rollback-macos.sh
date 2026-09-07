@@ -11,8 +11,21 @@ PLIST_PATH="${HOME}/Library/LaunchAgents/${SERVICE_LABEL}.plist"
 
 reject_symlink_components() {
   local candidate="$1"
-  local remaining="${candidate}"
-  local prefix="/"
+  local trusted_root="${HOME%/}"
+  [[ -n "${trusted_root}" && "${trusted_root}" != "/" ]] || {
+    echo "refusing an empty or root HOME path" >&2
+    exit 2
+  }
+  [[ ! -L "${trusted_root}" ]] || {
+    echo "refusing a symlinked HOME path" >&2
+    exit 2
+  }
+  case "${candidate}" in
+    "${trusted_root}"|"${trusted_root}"/*) ;;
+    *) echo "refusing a path outside HOME: ${candidate}" >&2; exit 2 ;;
+  esac
+  local remaining="${candidate#"${trusted_root}"}"
+  local prefix="${trusted_root}"
   while [[ -n "${remaining}" ]]; do
     remaining="${remaining#/}"
     [[ -n "${remaining}" ]] || break
