@@ -82,6 +82,18 @@ func TestStateSaveRejectsOversizedLedger(t *testing.T) {
 	}
 }
 
+func TestStateSaveRejectsOversizedQueueEpoch(t *testing.T) {
+	t.Parallel()
+	state := &State{QueueEpoch: strings.Repeat("x", maxQueueEpochLength+1)}
+	if err := state.Save(filepath.Join(t.TempDir(), "state.json")); err == nil {
+		t.Fatal("oversized queue epoch saved")
+	}
+	state.QueueEpoch = "   "
+	if err := state.Save(filepath.Join(t.TempDir(), "state.json")); err == nil {
+		t.Fatal("blank queue epoch saved")
+	}
+}
+
 func TestStateRoundTripsInFlightCommand(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join(t.TempDir(), "state.json")

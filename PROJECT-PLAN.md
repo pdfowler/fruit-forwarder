@@ -243,7 +243,7 @@ Tooling references: [Task guide](https://taskfile.dev/docs/guide), [Task schema]
 
 - Command states and recovery semantics are defined in [docs/command-lifecycle.md](docs/command-lifecycle.md): HA displays queued/withheld work, the Mac journals in-flight mutations, transport failures retry with backoff, and uncertain EventKit outcomes require explicit operator resolution.
 - Address the gap between saving a reminder in EventKit and persisting its acknowledgement. The Mac now journals an in-flight command before invoking EventKit, stops automatic replay after an ambiguous failure, and exposes explicit `recover --resolution applied|retry` choices. Continue evaluating a stronger correlation mechanism; do not claim exactly-once behavior without evidence across that boundary.
-- Inspect the current 1,000-command acknowledgement cap. Define retention relative to pending commands and restored HA backups so old commands cannot silently replay after eviction.
+- The 1,000-command acknowledgement cap is now paired with a persisted HA queue epoch. The Mac fences a changed or later-omitted epoch and provides an explicit `reset-queue-epoch` recovery command; continue testing restored backups and operator messaging before claiming the fence covers every backup topology.
 - Prevent concurrent `serve`, `sync-once` and replacement processes from racing on command execution or the same state file. Coordinate MCP mutations where needed.
 - Test atomic replacement separately from power-loss durability; evaluate file and directory synchronization, permissions, failed writes and corrupt state recovery.
 - Define ordering and conflict handling for two edits to one reminder, recurring reminders, externally deleted items and list moves.
@@ -251,7 +251,7 @@ Tooling references: [Task guide](https://taskfile.dev/docs/guide), [Task schema]
 - Preserve good snapshots during transient failures. Publish per-capability health and last successful sync instead of making stale data appear current.
 - The daemon now uses bounded exponential retry backoff with jitter after Home Assistant failures and returns to the configured polling interval after success. Continue evaluating EventKit change notifications to accelerate updates while keeping polling as a recovery mechanism.
 - Bound queue size, command-field bytes, response payloads, event counts and helper output. The HA queue now fails closed at 1,000 commands, validates queued mutation fields, and rejects an oversized command response; continue reconciling the one-MiB payload limit with 10,000-item snapshots and realistic notes.
-- Protocol version 1 now advertises additive capabilities before relying on optional fields across mixed HA/Mac versions; calendar clients reject peers that do not advertise `calendars`, while legacy reminder-only responses remain compatible. Continue documenting upgrade order and rejection behavior for future protocol versions.
+- Protocol version 1 now advertises additive capabilities before relying on optional fields across mixed HA/Mac versions; calendar clients reject peers that do not advertise `calendars`, and queue clients fence a changed `queue_epoch`, while legacy reminder-only responses remain compatible until an epoch is established. Continue documenting upgrade order and rejection behavior for future protocol versions.
 
 **Done when:** failure-injection tests cover every mutation/acknowledgement boundary; ambiguous operations are visible and safe; no test loses a confirmed user edit or silently applies an edit twice.
 

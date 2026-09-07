@@ -119,6 +119,74 @@ func TestCalendarFailureDoesNotBlockReminderPublication(t *testing.T) {
 	}
 }
 
+func TestQueueEpochFencesRestoredHomeAssistantQueue(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		epoch := "epoch-one"
+		if callCount > 1 {
+			epoch = "epoch-two"
+		}
+		response := model.SyncResponse{
+			Version:      model.ProtocolVersion,
+			Capabilities: []string{model.CapabilityReminders, model.CapabilityCommandQueue, model.CapabilityQueueEpoch},
+			QueueEpoch:   epoch,
+		}
+		if callCount > 1 {
+			response.Commands = []model.Command{{ID: "old-command", Action: "complete", ListID: "list", Item: model.Item{UID: "item"}}}
+		}
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	cfg := &config.Config{
+		BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s",
+		StatePath: filepath.Join(t.TempDir(), "state.json"),
+	}
+	store := &fakeReminderStore{}
+	bridgeState := &state.State{}
+	client := New(cfg, "token", store, bridgeState, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	client.httpClient = server.Client()
+	if _, err := client.SyncOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if bridgeState.QueueEpoch != "epoch-one" {
+		t.Fatalf("queue epoch = %q, want epoch-one", bridgeState.QueueEpoch)
+	}
+	if _, err := client.SyncOnce(context.Background()); err == nil || !strings.Contains(err.Error(), "queue epoch changed") {
+		t.Fatalf("expected queue epoch fence, got %v", err)
+	}
+	if len(store.commands) != 0 {
+		t.Fatalf("fenced queue applied %d commands", len(store.commands))
+	}
+	if bridgeState.QueueEpoch != "epoch-one" {
+		t.Fatalf("fenced queue changed local epoch to %q", bridgeState.QueueEpoch)
+	}
+}
+
+func TestQueueEpochOmissionAfterPairingFailsClosed(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		callCount++
+		response := model.SyncResponse{Version: model.ProtocolVersion}
+		if callCount == 1 {
+			response.Capabilities = []string{model.CapabilityReminders, model.CapabilityCommandQueue, model.CapabilityQueueEpoch}
+			response.QueueEpoch = "epoch-one"
+		}
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+	cfg := &config.Config{BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s", StatePath: filepath.Join(t.TempDir(), "state.json")}
+	client := New(cfg, "token", &fakeReminderStore{}, &state.State{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	client.httpClient = server.Client()
+	if _, err := client.SyncOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.SyncOnce(context.Background()); err == nil || !strings.Contains(err.Error(), "omitted the established queue epoch") {
+		t.Fatalf("expected queue epoch omission fence, got %v", err)
+	}
+}
+
 func TestCalendarSyncRejectsServerWithoutCalendarCapability(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(model.SyncResponse{

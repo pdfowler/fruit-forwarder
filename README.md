@@ -75,6 +75,9 @@ without reading reminder contents.
 If a write reaches an uncertain EventKit outcome, `doctor` reports the
 in-flight command and syncing pauses until it is explicitly resolved; see the
 recovery steps in [docs/setup.md](docs/setup.md).
+If Home Assistant presents a different persisted command-queue epoch after a
+restore, the bridge also pauses and requires explicit `reset-queue-epoch`
+review before applying queued mutations.
 
 The pairing token is stored in the macOS login Keychain. Do not commit the
 runtime config, state file, logs, or token.

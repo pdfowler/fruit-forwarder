@@ -18,6 +18,7 @@ from homeassistant.helpers.storage import Store
 from .const import (
     CAPABILITY_CALENDARS,
     CAPABILITY_COMMAND_QUEUE,
+    CAPABILITY_QUEUE_EPOCH,
     CAPABILITY_REMINDERS,
     CONF_ALLOWED_CALENDAR_IDS,
     CONF_ALLOWED_LIST_IDS,
@@ -58,12 +59,21 @@ class BridgeRuntime:
         self.lists: dict[str, dict[str, Any]] = {}
         self.calendars: dict[str, dict[str, Any]] = {}
         self.commands: list[dict[str, Any]] = []
+        self.queue_epoch: str | None = None
         self.last_sync: str | None = None
         self.calendar_last_sync: str | None = None
 
     async def async_load(self) -> None:
         """Restore the last confirmed snapshot and pending commands."""
         stored = await self._store.async_load() or {}
+        stored_epoch = stored.get("queue_epoch")
+        if stored_epoch is not None and (
+            not isinstance(stored_epoch, str)
+            or not stored_epoch.strip()
+            or len(stored_epoch) > 128
+        ):
+            raise ProtocolError("Stored queue epoch is invalid")
+        self.queue_epoch = stored_epoch or uuid.uuid4().hex
         allowed_ids = set(self.entry.data[CONF_ALLOWED_LIST_IDS])
         calendar_ids = set(self.entry.data.get(CONF_ALLOWED_CALENDAR_IDS, []))
         self.calendars = validate_calendars([
@@ -102,7 +112,8 @@ class BridgeRuntime:
                 self.commands.append(command)
         self.last_sync = stored.get("last_sync")
         self.calendar_last_sync = stored.get("calendar_last_sync")
-        if (len(self.lists) != len(stored.get("lists", []))
+        if (stored_epoch != self.queue_epoch
+                or len(self.lists) != len(stored.get("lists", []))
                 or len(self.commands) != len(stored.get("commands", []))
                 or len(self.calendars) != len(stored.get("calendars", []))):
             # Persist revocation so re-adding a list cannot resurrect stale edits.
@@ -133,6 +144,8 @@ class BridgeRuntime:
         except ValueError as err:
             raise ProtocolError(str(err)) from err
         async with self._transaction():
+            if self.queue_epoch is None:
+                self.queue_epoch = uuid.uuid4().hex
             if calendars is not None:
                 self.calendars = calendars
                 self.calendar_last_sync = datetime.now(UTC).isoformat()
@@ -152,12 +165,14 @@ class BridgeRuntime:
                 "capabilities": [
                     CAPABILITY_REMINDERS,
                     CAPABILITY_COMMAND_QUEUE,
+                    CAPABILITY_QUEUE_EPOCH,
                     *(
                         [CAPABILITY_CALENDARS]
                         if CONF_ALLOWED_CALENDAR_IDS in self.entry.data
                         else []
                     ),
                 ],
+                "queue_epoch": self.queue_epoch,
                 # Keep temporarily unavailable/read-only edits queued, but do
                 # not ask EventKit to execute them until the list is writable.
                 "commands": deepcopy([
@@ -283,12 +298,12 @@ class BridgeRuntime:
     async def _transaction(self):
         """Publish mutations only after storage succeeds; rollback failed saves."""
         async with self._lock:
-            previous = deepcopy((self.lists, self.commands, self.last_sync, self.calendars, self.calendar_last_sync))
+            previous = deepcopy((self.lists, self.commands, self.queue_epoch, self.last_sync, self.calendars, self.calendar_last_sync))
             try:
                 yield
                 await self._async_save()
             except BaseException:
-                self.lists, self.commands, self.last_sync, self.calendars, self.calendar_last_sync = previous
+                self.lists, self.commands, self.queue_epoch, self.last_sync, self.calendars, self.calendar_last_sync = previous
                 raise
 
     async def _async_save(self) -> None:
@@ -297,6 +312,7 @@ class BridgeRuntime:
                 "lists": list(self.lists.values()),
                 "calendars": list(self.calendars.values()),
                 "commands": self.commands,
+                "queue_epoch": self.queue_epoch,
                 "last_sync": self.last_sync,
                 "calendar_last_sync": self.calendar_last_sync,
             }

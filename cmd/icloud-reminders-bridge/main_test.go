@@ -196,6 +196,38 @@ func TestRecoverCommandRejectsMissingResolution(t *testing.T) {
 	}
 }
 
+func TestResetQueueEpochRequiresExplicitSafeState(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	if err := (&state.State{}).Save(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := resetQueueEpoch(&config.Config{StatePath: path}, "epoch-two"); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := state.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.QueueEpoch != "epoch-two" {
+		t.Fatalf("queue epoch = %q, want epoch-two", loaded.QueueEpoch)
+	}
+	if err := resetQueueEpoch(&config.Config{StatePath: path}, ""); err == nil {
+		t.Fatal("empty queue epoch accepted")
+	}
+}
+
+func TestResetQueueEpochRejectsUncertainCommand(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	if err := (&state.State{InFlight: &model.Command{
+		ID: "command-uncertain", Action: "complete", ListID: "list", Item: model.Item{UID: "item"},
+	}}).Save(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := resetQueueEpoch(&config.Config{StatePath: path}, "epoch-two"); err == nil || !strings.Contains(err.Error(), "uncertain") {
+		t.Fatalf("uncertain state was reset: %v", err)
+	}
+}
+
 func TestReportStatusAcceptsReadyConfiguration(t *testing.T) {
 	dir := t.TempDir()
 	helper := filepath.Join(dir, "eventkit-helper")

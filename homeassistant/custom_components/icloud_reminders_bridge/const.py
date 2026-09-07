@@ -8,6 +8,7 @@ PROTOCOL_VERSION = 1
 CAPABILITY_REMINDERS = "reminders"
 CAPABILITY_CALENDARS = "calendars"
 CAPABILITY_COMMAND_QUEUE = "command_queue"
+CAPABILITY_QUEUE_EPOCH = "queue_epoch"
 
 CONF_BRIDGE_ID = "bridge_id"
 CONF_PAIRING_TOKEN = "pairing_token"

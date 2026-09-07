@@ -44,9 +44,20 @@ recovery evidence.
 
 The Mac acknowledgement ledger retains at most 1,000 command IDs, while HA
 bounds queued commands and payload sizes. Eviction never removes a pending or
-in-flight command. Restored state is validated before use; malformed,
-oversized, duplicate, or blank entries fail closed. These bounds protect the
-service from unbounded history but are not a substitute for a durable backup.
+in-flight command. HA also persists a queue epoch beside its pending commands,
+and the Mac persists the epoch it has accepted. If a restored HA backup presents
+a different epoch, the Mac refuses to apply any queued command until an operator
+reviews the backup and explicitly accepts it:
+
+```sh
+bridge reset-queue-epoch --queue-epoch EPOCH_FROM_THE_REVIEWED_HA_QUEUE
+```
+
+Restored state is validated before use; malformed, oversized, duplicate, or
+blank entries fail closed. A peer that omits the epoch remains compatible only
+until the Mac has established one; later omission is treated as an unsafe
+downgrade. These bounds and the epoch fence protect against common stale-backup
+replays but are not a substitute for a durable backup or human review.
 
 ## Conflict boundaries
 

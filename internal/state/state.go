@@ -50,11 +50,13 @@ func Acquire(path string) (func(), error) {
 
 const maxAppliedCommands = 1000
 const maxCommandIDLength = 256
+const maxQueueEpochLength = 128
 const maxStateBytes = 512 * 1024
 
 type State struct {
 	AppliedCommandIDs []string       `json:"applied_command_ids"`
 	InFlight          *model.Command `json:"in_flight,omitempty"`
+	QueueEpoch        string         `json:"queue_epoch,omitempty"`
 }
 
 func Load(path string) (*State, error) {
@@ -173,6 +175,9 @@ func validate(s *State) error {
 	}
 	if len(s.AppliedCommandIDs) > maxAppliedCommands {
 		return fmt.Errorf("applied command ledger exceeds %d entries", maxAppliedCommands)
+	}
+	if s.QueueEpoch != "" && (strings.TrimSpace(s.QueueEpoch) == "" || len(s.QueueEpoch) > maxQueueEpochLength) {
+		return fmt.Errorf("queue epoch must be non-empty and at most %d characters", maxQueueEpochLength)
 	}
 	seen := make(map[string]struct{}, len(s.AppliedCommandIDs))
 	for _, id := range s.AppliedCommandIDs {

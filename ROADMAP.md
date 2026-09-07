@@ -25,6 +25,10 @@ Before a broadly recommended release:
 - Document and test create replay behavior across crashes: an EventKit save
   and the local acknowledgement are separate operations, so a crash between
   them can duplicate a creation.
+- Fence stale Home Assistant queue restores with the persisted `queue_epoch`;
+  the Mac now refuses changed or later-omitted epochs and requires an explicit
+  `reset-queue-epoch` review step. Validate this against real HA backup/restore
+  behavior before treating it as complete durability evidence.
 - Validate installer upgrades, token rotation, and rollback before publishing
   signed or packaged releases. Manual component copying is the current HA path.
 - Extend the EventKit adapter to calendars with a bounded time window, explicit

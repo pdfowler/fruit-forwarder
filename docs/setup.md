@@ -77,6 +77,15 @@ explicit resolution only after checking Apple Reminders:
 
 See [command-lifecycle.md](command-lifecycle.md) for the full queued,
 withheld, in-flight, confirmed, retryable, and uncertain state model.
+If a restored Home Assistant backup changes the command-queue epoch, inspect
+the restored queue before accepting it:
+
+```sh
+"$bridge" reset-queue-epoch --queue-epoch EPOCH_FROM_THE_REVIEWED_HA_QUEUE
+```
+
+The bridge will not apply queued mutations across an epoch change, and the
+command is deliberately separate from uncertain EventKit recovery.
 
 Each installation keeps the previous executable pair under
 `~/Library/Application Support/icloud-reminders-bridge/rollback/`. If a new

@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/pdfowler/icloud-reminders-bridge/internal/config"
@@ -45,6 +46,7 @@ func run() error {
 	jsonOutput := flags.Bool("json", false, "format status or doctor output as JSON")
 	commandID := flags.String("command-id", "", "in-flight command identifier for recover")
 	resolution := flags.String("resolution", "", "recover resolution: applied or retry")
+	queueEpoch := flags.String("queue-epoch", "", "Home Assistant queue epoch to accept after reviewing a restore")
 	if err := flags.Parse(os.Args[2:]); err != nil {
 		return err
 	}
@@ -76,6 +78,9 @@ func run() error {
 	}
 	if command == "recover" {
 		return recoverCommand(cfg, *commandID, *resolution)
+	}
+	if command == "reset-queue-epoch" {
+		return resetQueueEpoch(cfg, *queueEpoch)
 	}
 	if command == "pair" {
 		return pair(cfg)
@@ -137,6 +142,7 @@ type statusReport struct {
 	KeychainReady        *bool  `json:"keychain_ready,omitempty"`
 	StatePath            string `json:"state_path"`
 	StateReady           bool   `json:"state_ready"`
+	QueueEpoch           string `json:"queue_epoch,omitempty"`
 	InFlightCommandID    string `json:"in_flight_command_id,omitempty"`
 }
 
@@ -154,8 +160,11 @@ func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) 
 	bridgeState, stateErr := state.Load(cfg.StatePath)
 	if stateErr != nil {
 		report.StateReady = false
-	} else if bridgeState.InFlight != nil {
-		report.InFlightCommandID = bridgeState.InFlight.ID
+	} else {
+		report.QueueEpoch = bridgeState.QueueEpoch
+		if bridgeState.InFlight != nil {
+			report.InFlightCommandID = bridgeState.InFlight.ID
+		}
 	}
 	if deep && cfg.HomeAssistantURL != "" {
 		_, keychainErr := keychain.Load(cfg.KeychainService, cfg.KeychainAccount)
@@ -177,6 +186,9 @@ func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) 
 			fmt.Printf("  pairing Keychain item: %s\n", readiness(*report.KeychainReady))
 		}
 		fmt.Printf("  acknowledgement state: %s\n", readiness(report.StateReady))
+		if report.QueueEpoch != "" {
+			fmt.Printf("  Home Assistant queue epoch: %s\n", report.QueueEpoch)
+		}
 		if report.InFlightCommandID != "" {
 			fmt.Printf("  uncertain command: %s (run recover with an explicit resolution)\n", report.InFlightCommandID)
 		}
@@ -222,6 +234,30 @@ func recoverCommand(cfg *config.Config, commandID, resolution string) error {
 	} else {
 		fmt.Printf("Cleared uncertain command %s; it may be retried on the next sync.\n", commandID)
 	}
+	return nil
+}
+
+func resetQueueEpoch(cfg *config.Config, queueEpoch string) error {
+	if strings.TrimSpace(queueEpoch) == "" || len(queueEpoch) > 128 {
+		return errors.New("reset-queue-epoch requires a non-empty queue epoch of at most 128 characters")
+	}
+	releaseLock, err := state.Acquire(cfg.StatePath + ".lock")
+	if err != nil {
+		return fmt.Errorf("acquire bridge state lock: %w", err)
+	}
+	defer releaseLock()
+	bridgeState, err := state.Load(cfg.StatePath)
+	if err != nil {
+		return fmt.Errorf("load acknowledgement state: %w", err)
+	}
+	if bridgeState.InFlight != nil {
+		return fmt.Errorf("cannot reset queue epoch while command %s has an uncertain outcome", bridgeState.InFlight.ID)
+	}
+	bridgeState.QueueEpoch = queueEpoch
+	if err := bridgeState.Save(cfg.StatePath); err != nil {
+		return fmt.Errorf("save queue epoch: %w", err)
+	}
+	fmt.Printf("Accepted Home Assistant queue epoch %s after explicit review.\n", queueEpoch)
 	return nil
 }
 
@@ -287,5 +323,5 @@ func pair(cfg *config.Config) error {
 }
 
 func usageError() error {
-	return errors.New("usage: icloud-reminders-bridge <version|discover|discover-calendars|pair|status|doctor|recover|check-config|sync-once|serve|mcp> [--config path] [--eventkit-helper path] [--json] [--command-id id] [--resolution applied|retry]")
+	return errors.New("usage: icloud-reminders-bridge <version|discover|discover-calendars|pair|status|doctor|recover|reset-queue-epoch|check-config|sync-once|serve|mcp> [--config path] [--eventkit-helper path] [--json] [--command-id id] [--resolution applied|retry] [--queue-epoch id]")
 }

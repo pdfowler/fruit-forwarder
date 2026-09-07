@@ -53,7 +53,21 @@ async def test_response_advertises_capabilities_for_configured_scopes(tmp_path):
     bridge = runtime(tmp_path)
     bridge.entry.data["allowed_calendar_ids"] = ["calendar"]
     response = await bridge.async_process_snapshot(snapshot())
-    assert response["capabilities"] == ["reminders", "command_queue", "calendars"]
+    assert response["capabilities"] == ["reminders", "command_queue", "queue_epoch", "calendars"]
+    assert response["queue_epoch"]
+
+
+@pytest.mark.asyncio
+async def test_queue_epoch_survives_restart(tmp_path):
+    bridge = runtime(tmp_path)
+    response = await bridge.async_process_snapshot(snapshot())
+    stored = deepcopy(bridge._store.async_save.call_args.args[0])
+    restored = runtime(tmp_path)
+    restored._store.async_load.return_value = stored
+    await restored.async_load()
+    assert restored.queue_epoch == response["queue_epoch"]
+    next_response = await restored.async_process_snapshot(snapshot())
+    assert next_response["queue_epoch"] == response["queue_epoch"]
 
 
 @pytest.mark.asyncio

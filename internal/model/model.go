@@ -7,6 +7,7 @@ const (
 	CapabilityReminders    = "reminders"
 	CapabilityCalendars    = "calendars"
 	CapabilityCommandQueue = "command_queue"
+	CapabilityQueueEpoch   = "queue_epoch"
 )
 
 type Event struct {
@@ -67,5 +68,6 @@ type Command struct {
 type SyncResponse struct {
 	Version      int       `json:"version"`
 	Capabilities []string  `json:"capabilities,omitempty"`
+	QueueEpoch   string    `json:"queue_epoch,omitempty"`
 	Commands     []Command `json:"commands"`
 }

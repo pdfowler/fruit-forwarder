@@ -9,6 +9,10 @@ in its response. Reminder-only clients remain interoperable with version-1
 implementations that predate this field; a calendar-enabled client fails closed
 when HA does not advertise `calendars`, rather than silently dropping events.
 Unknown future capability names are ignored after basic shape validation.
+The HA response also advertises `queue_epoch`; the Mac persists that value and
+fences a changed or later-omitted epoch before applying queued mutations. See
+[command lifecycle and recovery](command-lifecycle.md) for the explicit restore
+review command.
 
 For HA, install the updated custom component and restart HA before enabling
 calendars in the Mac config. In integration setup, enter the same exact event

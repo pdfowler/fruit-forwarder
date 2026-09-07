@@ -24,6 +24,7 @@ const maxCommands = 1000
 const maxCommandString = 256
 const maxCapabilities = 16
 const maxCapabilityString = 64
+const maxQueueEpochLength = 128
 const maxRetryBackoff = 15 * time.Minute
 
 type ReminderStore interface {
@@ -129,6 +130,9 @@ func (c *Client) SyncOnce(ctx context.Context) (int, error) {
 	}
 	response, err := c.postSnapshot(ctx, lists)
 	if err != nil {
+		return 0, err
+	}
+	if err := c.acceptQueueEpoch(response.QueueEpoch); err != nil {
 		return 0, err
 	}
 	applied := 0
@@ -251,6 +255,12 @@ func (c *Client) postSnapshot(ctx context.Context, lists []model.List) (*model.S
 	if err := validateResponseCapabilities(result.Capabilities, c.cfg); err != nil {
 		return nil, err
 	}
+	if err := validateQueueEpoch(result.QueueEpoch); err != nil {
+		return nil, err
+	}
+	if result.QueueEpoch != "" && !containsCapability(result.Capabilities, model.CapabilityQueueEpoch) {
+		return nil, errors.New("Home Assistant queue epoch is missing the queue_epoch capability")
+	}
 	for _, command := range result.Commands {
 		if c.state.Has(command.ID) {
 			continue
@@ -293,11 +303,52 @@ func boundedCommandString(value string) bool {
 }
 
 func capabilitiesForConfig(cfg *config.Config) []string {
-	capabilities := []string{model.CapabilityReminders, model.CapabilityCommandQueue}
+	capabilities := []string{model.CapabilityReminders, model.CapabilityCommandQueue, model.CapabilityQueueEpoch}
 	if len(cfg.Calendars) > 0 {
 		capabilities = append(capabilities, model.CapabilityCalendars)
 	}
 	return capabilities
+}
+
+func containsCapability(capabilities []string, wanted string) bool {
+	for _, capability := range capabilities {
+		if capability == wanted {
+			return true
+		}
+	}
+	return false
+}
+
+func validateQueueEpoch(epoch string) error {
+	if epoch == "" {
+		return nil
+	}
+	if strings.TrimSpace(epoch) == "" || len(epoch) > maxQueueEpochLength {
+		return errors.New("Home Assistant queue epoch is empty or exceeds its bound")
+	}
+	return nil
+}
+
+func (c *Client) acceptQueueEpoch(epoch string) error {
+	if epoch == "" {
+		if c.state.QueueEpoch != "" {
+			return errors.New("Home Assistant omitted the established queue epoch; refuse to apply queued commands")
+		}
+		return nil
+	}
+	if c.state.QueueEpoch == "" {
+		c.state.QueueEpoch = epoch
+		if c.cfg.StatePath != "" {
+			if err := c.state.Save(c.cfg.StatePath); err != nil {
+				return fmt.Errorf("persist Home Assistant queue epoch: %w", err)
+			}
+		}
+		return nil
+	}
+	if c.state.QueueEpoch != epoch {
+		return fmt.Errorf("Home Assistant queue epoch changed from %q to %q; inspect the HA backup and run reset-queue-epoch before applying commands", c.state.QueueEpoch, epoch)
+	}
+	return nil
 }
 
 func validateResponseCapabilities(capabilities []string, cfg *config.Config) error {
