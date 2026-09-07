@@ -12,7 +12,12 @@ Before running it:
 2. Create the matching annotated version tag (`v<release/VERSION>`) and run the
    workflow from that tag; the workflow refuses branch-based publication.
 3. Run `task release:prepare` on macOS and inspect the release manifest,
-   checksums, HACS archive, macOS tarball, and MCPB contents.
+   checksums, HACS archive, macOS tarball, and MCPB contents. The HA and macOS
+   package scripts also re-open their finished archives and verify their
+   versioned roots, required files, checksums, and absence of unexpected links
+   or interpreter caches. The macOS archive is assembled with normalized
+   metadata and is byte-for-byte reproducible when its staged binaries are
+   unchanged.
 4. Complete the real Mac/HA/MCP acceptance matrix in `PROJECT-PLAN.md`,
    including disposable reminders/calendars and rollback evidence.
 5. Confirm the GitHub repository namespace, release signing/notarization policy,

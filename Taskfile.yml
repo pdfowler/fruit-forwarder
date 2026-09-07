@@ -73,6 +73,7 @@ tasks:
       - python3 -c 'import ast; ast.parse(open("scripts/render-release-manifest.py").read())'
       - python3 -c 'import ast; ast.parse(open("scripts/render-launchagent.py").read())'
       - python3 -c 'import ast; ast.parse(open("scripts/package-hacs.py").read())'
+      - python3 -c 'import ast; ast.parse(open("scripts/package-tar.py").read())'
 
   package:ha:
     deps: [metadata:check]

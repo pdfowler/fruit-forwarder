@@ -50,7 +50,8 @@ chmod 0755 "${staging}/fruit-forwarder-macos-${version}/scripts/"*.sh
 "${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-bridge" version | grep -Fx "${version}" >/dev/null
 mkdir -p "${output_dir}"
 rm -f "${archive}" "${archive}.sha256"
-COPYFILE_DISABLE=1 tar -C "${staging}" -czf "${archive}" "fruit-forwarder-macos-${version}"
+python3 "${repo_dir}/scripts/package-tar.py" \
+  "${staging}/fruit-forwarder-macos-${version}" "${archive}"
 checksum="$(openssl dgst -sha256 "${archive}" | awk '{print $NF}')"
 printf '%s  %s\n' "${checksum}" "$(basename "${archive}")" > "${archive}.sha256"
 "${repo_dir}/scripts/check-macos-package.sh" "${version}" "${archive}"
