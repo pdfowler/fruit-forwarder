@@ -61,6 +61,13 @@ def main() -> None:
         if artifact.get("kind") == "directory":
             if not path.is_dir() or path.is_symlink():
                 raise SystemExit(f"artifact directory is missing or unsafe: {relative}")
+            manifest_file = path / "custom_components/icloud_reminders_bridge/manifest.json"
+            if artifact.get("manifest_version") is not None:
+                if not manifest_file.is_file() or manifest_file.is_symlink():
+                    raise SystemExit(f"artifact directory has no regular integration manifest: {relative}")
+                component_version = json.loads(manifest_file.read_text()).get("version")
+                if component_version != artifact["manifest_version"]:
+                    raise SystemExit(f"HACS artifact version mismatch: {relative}")
             continue
         if not path.is_file() or path.is_symlink():
             raise SystemExit(f"artifact file is missing or unsafe: {relative}")
