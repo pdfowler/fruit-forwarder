@@ -112,7 +112,10 @@ Check `~/Library/Logs/icloud-reminders-bridge/icloud-reminders-bridge.log` for
 successful syncs. Foreground permission does not prove launchd access works:
 if the helper times out in the background, recheck macOS permissions and use
 `"$bridge" serve` in an interactive terminal while investigating. Background
-permission/reboot recovery remains a release validation gap.
+permission/reboot recovery remains a release validation gap. The Fruit Forwarder
+LaunchAgent runs the bridge directly in the logged-in user's GUI domain; it does
+not add a nested `launchctl asuser` wrapper. The former home-ctrl service may
+still show the legacy arrangement until migration is explicitly activated.
 
 ## Local MCP
 
