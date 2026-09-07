@@ -326,7 +326,7 @@ Design a separate milestone for authenticated network transport: supported MCP a
 - Review clipboard pairing: token lifetime, accidental logging, clipboard-manager exposure, recovery and optional clearing behavior. Never call a persistent bearer token a single-use code.
 - Ensure tokens do not appear in errors, trace logs, reverse-proxy access logs, crash reports, process listings or support bundles. Cover Calendar contents as well as Reminders.
 - Harden config, binary and state ownership/permissions, including symlinks and parent-directory trust. Verify installation cannot accidentally broaden access.
-- Add body and output bounds at every parser, not only at the HA HTTP handler. Fuzz narrow protocol validators where valuable.
+- Add body and output bounds at every parser, not only at the HA HTTP handler. Native helper stdout/stderr are now bounded before JSON parsing; fuzz narrow protocol validators where valuable.
 - Validate TLS, redirect rejection and the effective `local_only` boundary under supported reverse-proxy configurations.
 - Define privacy for HA snapshots, queued commands, recorder data, Mac state, logs and backups. Filtering a snapshot is not historical deletion.
 - Home Assistant now exposes opt-in diagnostics containing only redacted configuration flags, counts and synchronization timestamps; it never includes credentials, identifiers or household contents. Keep the preview and installed-client review in the acceptance matrix.

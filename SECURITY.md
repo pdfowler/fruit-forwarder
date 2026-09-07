@@ -29,6 +29,10 @@ directories must also be private and user-owned. This prevents an accidental
 shared path from changing the allowlist or replay ledger; it is not protection
 against another process already running as the same macOS user.
 
+Native helper stdout is bounded before JSON parsing, and helper diagnostics are
+bounded before they can enter an error message. Oversized helper output fails
+closed rather than being retained in memory or parsed as a partial response.
+
 HA persists reminder snapshots and pending commands in its storage. Recent
 completed-item filtering changes the published snapshot; it does not delete
 Apple Reminders history or scrub existing HA backups and recorder history.

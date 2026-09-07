@@ -30,6 +30,18 @@ func TestValidateHelperPathChecksExecutableSafety(t *testing.T) {
 	}
 }
 
+func TestDiscoverRejectsExcessiveHelperOutput(t *testing.T) {
+	path := t.TempDir() + "/helper"
+	script := "#!/bin/sh\nhead -c 8388609 /dev/zero\n"
+	if err := os.WriteFile(path, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	_, err := Discover(context.Background(), path)
+	if err == nil || !strings.Contains(err.Error(), "output exceeds") {
+		t.Fatalf("excessive helper output was accepted: %v", err)
+	}
+}
+
 type fakeRunner struct {
 	lists    []model.List
 	snapshot []model.List

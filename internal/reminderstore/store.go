@@ -42,6 +42,29 @@ type commandRunner struct {
 	helperPath string
 }
 
+const (
+	maxHelperOutputBytes = 8 << 20
+	maxHelperErrorBytes  = 16 << 10
+)
+
+type boundedBuffer struct {
+	bytes.Buffer
+	limit    int
+	exceeded bool
+}
+
+func (b *boundedBuffer) Write(data []byte) (int, error) {
+	if b.Len()+len(data) > b.limit {
+		remaining := b.limit - b.Len()
+		if remaining > 0 {
+			_, _ = b.Buffer.Write(data[:remaining])
+		}
+		b.exceeded = true
+		return len(data), errors.New("output limit exceeded")
+	}
+	return b.Buffer.Write(data)
+}
+
 func (r *commandRunner) Run(ctx context.Context, input request) (response, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -51,9 +74,18 @@ func (r *commandRunner) Run(ctx context.Context, input request) (response, error
 	}
 	cmd := exec.CommandContext(ctx, r.helperPath)
 	cmd.Stdin = bytes.NewReader(payload)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &stdout, &stderr
-	if err := cmd.Run(); err != nil {
+	stdout := &boundedBuffer{limit: maxHelperOutputBytes}
+	stderr := &boundedBuffer{limit: maxHelperErrorBytes}
+	cmd.Stdout, cmd.Stderr = stdout, stderr
+	runErr := cmd.Run()
+	// Treat a buffer that reaches its ceiling as truncated as well. Some
+	// platform pipe implementations stop copying after the writer reports its
+	// error, so the flag alone is not sufficient to prove the full output was
+	// observed.
+	if stdout.exceeded || stderr.exceeded || stdout.Len() >= maxHelperOutputBytes || stderr.Len() >= maxHelperErrorBytes {
+		return response{}, fmt.Errorf("EventKit helper output exceeds the supported limit")
+	}
+	if runErr != nil {
 		if ctx.Err() != nil {
 			return response{}, fmt.Errorf("EventKit request did not finish; check macOS Reminders access: %w", ctx.Err())
 		}
@@ -62,7 +94,7 @@ func (r *commandRunner) Run(ctx context.Context, input request) (response, error
 			detail = detail[:512]
 		}
 		if detail == "" {
-			detail = err.Error()
+			detail = runErr.Error()
 		}
 		return response{}, fmt.Errorf("EventKit helper failed: %s", detail)
 	}
