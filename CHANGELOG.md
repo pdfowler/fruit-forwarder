@@ -31,7 +31,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
 - Enforce the requested `pfowler@icloud.com` author and committer identity
   across the complete Git history during local checks and publication workflows.
 - Add a guarded, tag-only MCP Registry publication workflow that validates the
-  immutable MCPB release asset before OIDC publication.
+  immutable MCPB release asset before OIDC publication, with a pinned publisher
+  URL and SHA-256 supplied at protected dispatch time.
 
 ## 0.1.0 — candidate
 

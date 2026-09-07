@@ -43,11 +43,13 @@ After the GitHub release exists:
   catalog inclusion once the required release and validation checks are live.
 - Run the guarded `Publish MCP Registry metadata` workflow from the matching
   version tag after configuring the protected `mcp-release` environment. Type
-  `PUBLISH_MCP`; it downloads the already-created release assets, rechecks the
-  MCPB checksum, release URL and `io.github.pdfowler/fruit-forwarder` namespace,
-  then authenticates with GitHub OIDC before publishing `server.json`. It does
-  not build or publish a package from a branch or working tree. Verify a clean
-  MCP client can fetch and install the exact artifact.
+  `PUBLISH_MCP`, and provide the exact official `mcp-publisher` Linux amd64
+  tarball URL and SHA-256 from the protected release review. It downloads the
+  already-created release assets, rechecks the MCPB checksum, release URL and
+  `io.github.pdfowler/fruit-forwarder` namespace, verifies the publisher
+  tarball, then authenticates with GitHub OIDC before publishing `server.json`.
+  It does not build or publish a package from a branch or working tree. Verify a
+  clean MCP client can fetch and install the exact artifact.
 
 If one target fails, leave the release partial and record the per-target status;
 do not rebuild a different artifact under an already published version.

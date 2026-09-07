@@ -7,6 +7,14 @@ on:
         description: Type PUBLISH_MCP to publish the tagged MCP metadata
         required: true
         type: string
+      publisher_url:
+        description: Official mcp-publisher Linux amd64 tarball URL
+        required: true
+        type: string
+      publisher_sha256:
+        description: SHA-256 for the exact publisher tarball URL
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -67,10 +75,18 @@ jobs:
           PY
 
       - name: Install the MCP Registry publisher
+        env:
+          PUBLISHER_URL: ${{ inputs.publisher_url }}
+          PUBLISHER_SHA256: ${{ inputs.publisher_sha256 }}
         run: |
+          publisher_url="${PUBLISHER_URL}"
+          publisher_sha256="${PUBLISHER_SHA256}"
+          [[ "${publisher_url}" == https://github.com/modelcontextprotocol/registry/releases/download/*/mcp-publisher_linux_amd64.tar.gz ]]
+          [[ "${publisher_sha256}" =~ ^[a-f0-9]{64}$ ]]
           curl --fail --location --silent --show-error \
-            "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
+            "${publisher_url}" \
             --output "${RUNNER_TEMP}/mcp-publisher.tar.gz"
+          printf '%s  %s\n' "${publisher_sha256}" "${RUNNER_TEMP}/mcp-publisher.tar.gz" | sha256sum -c -
           tar -xzf "${RUNNER_TEMP}/mcp-publisher.tar.gz" -C "${RUNNER_TEMP}" mcp-publisher
           chmod 0755 "${RUNNER_TEMP}/mcp-publisher"
 
