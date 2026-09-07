@@ -51,8 +51,10 @@ The macOS artifact from revision `4d9742f` was also exercised through
 `INSTALL_ONLY=true`. The wrapper verified the archive/checksum, rejected no
 unexpected members, staged both executables and created only the example
 configuration; it did not touch the real user profile or activate launchd.
-This proves the packaged staging path, not permissions, EventKit access,
-upgrade/rollback, or background service health.
+An otherwise valid-looking archive with a `../` member was also rejected
+before extraction. This proves the packaged staging path and its archive
+boundary checks, not permissions, EventKit access, upgrade/rollback, or
+background service health.
 
 ### Dean live observation (2026-09-07)
 
