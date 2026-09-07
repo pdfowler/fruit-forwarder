@@ -29,7 +29,6 @@ helper_files = [
     "deployment/eventkit-helper-Info.plist",
     "Taskfile.yml",
     "scripts/build-macos.sh",
-    ".github/workflows/ci.yml",
 ]
 
 missing = []
