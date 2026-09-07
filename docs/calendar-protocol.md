@@ -3,6 +3,13 @@
 The native helper, MCP, and HA integration support read-only event calendars.
 Real-account recurrence and background operation remain release validation work.
 
+Protocol version 1 uses an additive `capabilities` declaration. The Mac bridge
+advertises the scopes it is sending, and HA advertises the scopes it can return
+in its response. Reminder-only clients remain interoperable with version-1
+implementations that predate this field; a calendar-enabled client fails closed
+when HA does not advertise `calendars`, rather than silently dropping events.
+Unknown future capability names are ignored after basic shape validation.
+
 For HA, install the updated custom component and restart HA before enabling
 calendars in the Mac config. In integration setup, enter the same exact event
 calendar IDs under Allowed EventKit calendar IDs. HA maintains its own allowlist;

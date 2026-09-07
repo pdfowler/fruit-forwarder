@@ -49,6 +49,24 @@ async def test_command_survives_restart_and_is_acknowledged(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_response_advertises_capabilities_for_configured_scopes(tmp_path):
+    bridge = runtime(tmp_path)
+    bridge.entry.data["allowed_calendar_ids"] = ["calendar"]
+    response = await bridge.async_process_snapshot(snapshot())
+    assert response["capabilities"] == ["reminders", "command_queue", "calendars"]
+
+
+@pytest.mark.asyncio
+async def test_calendar_payload_requires_declared_capability(tmp_path):
+    bridge = runtime(tmp_path)
+    payload = snapshot()
+    payload["calendars"] = []
+    payload["capabilities"] = ["reminders", "command_queue"]
+    with pytest.raises(ProtocolError, match="calendar data requires"):
+        await bridge.async_process_snapshot(payload)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("failure", [OSError("disk full"), asyncio.CancelledError()])
 async def test_failed_command_save_rolls_back_and_does_not_notify(tmp_path, failure):
     bridge = runtime(tmp_path)

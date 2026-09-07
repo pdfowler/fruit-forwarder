@@ -244,7 +244,7 @@ Tooling references: [Task guide](https://taskfile.dev/docs/guide), [Task schema]
 - Preserve good snapshots during transient failures. Publish per-capability health and last successful sync instead of making stale data appear current.
 - The daemon now uses bounded exponential retry backoff with jitter after Home Assistant failures and returns to the configured polling interval after success. Continue evaluating EventKit change notifications to accelerate updates while keeping polling as a recovery mechanism.
 - Bound queue size, command-field bytes, response payloads, event counts and helper output. The HA queue now fails closed at 1,000 commands, validates queued mutation fields, and rejects an oversized command response; continue reconciling the one-MiB payload limit with 10,000-item snapshots and realistic notes.
-- Introduce protocol capability/version negotiation before relying on optional fields across mixed HA/Mac versions. Define upgrade order and rejection behavior.
+- Protocol version 1 now advertises additive capabilities before relying on optional fields across mixed HA/Mac versions; calendar clients reject peers that do not advertise `calendars`, while legacy reminder-only responses remain compatible. Continue documenting upgrade order and rejection behavior for future protocol versions.
 
 **Done when:** failure-injection tests cover every mutation/acknowledgement boundary; ambiguous operations are visible and safe; no test loses a confirmed user edit or silently applies an edit twice.
 

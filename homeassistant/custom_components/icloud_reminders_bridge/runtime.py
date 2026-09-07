@@ -16,6 +16,9 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 
 from .const import (
+    CAPABILITY_CALENDARS,
+    CAPABILITY_COMMAND_QUEUE,
+    CAPABILITY_REMINDERS,
     CONF_ALLOWED_CALENDAR_IDS,
     CONF_ALLOWED_LIST_IDS,
     CONF_PAIRING_TOKEN,
@@ -146,6 +149,15 @@ class BridgeRuntime:
             self.last_sync = datetime.now(UTC).isoformat()
             response = {
                 "version": PROTOCOL_VERSION,
+                "capabilities": [
+                    CAPABILITY_REMINDERS,
+                    CAPABILITY_COMMAND_QUEUE,
+                    *(
+                        [CAPABILITY_CALENDARS]
+                        if CONF_ALLOWED_CALENDAR_IDS in self.entry.data
+                        else []
+                    ),
+                ],
                 # Keep temporarily unavailable/read-only edits queued, but do
                 # not ask EventKit to execute them until the list is writable.
                 "commands": deepcopy([
@@ -203,6 +215,7 @@ class BridgeRuntime:
             raise ProtocolError("Unsupported bridge protocol version")
         if payload.get("bridge_id") != self.entry.data[CONF_BRIDGE_ID]:
             raise ProtocolError("Bridge identifier does not match this entry")
+        _validate_capabilities(payload.get("capabilities"), payload)
         raw_lists = payload.get("lists")
         if not isinstance(raw_lists, list) or len(raw_lists) > MAX_LISTS:
             raise ProtocolError("Invalid reminder list collection")
@@ -300,6 +313,26 @@ def _required_string(value: dict[str, Any], key: str) -> str:
     if not isinstance(result, str) or not result.strip() or len(result) > MAX_STRING_LENGTH:
         raise ProtocolError(f"{key} must be a non-empty string")
     return result
+
+
+def _validate_capabilities(raw: Any, payload: dict[str, Any]) -> None:
+    """Validate optional capability declarations without blocking extensions."""
+    if raw is None:
+        return
+    if not isinstance(raw, list) or len(raw) > 16:
+        raise ProtocolError("capabilities must be a bounded array of strings")
+    seen: set[str] = set()
+    for capability in raw:
+        if (
+            not isinstance(capability, str)
+            or not capability.strip()
+            or len(capability) > 64
+            or capability in seen
+        ):
+            raise ProtocolError("capabilities must contain unique bounded names")
+        seen.add(capability)
+    if "calendars" in payload and "calendars" not in seen:
+        raise ProtocolError("calendar data requires the calendars capability")
 
 
 def _validate_command_item(action: str, item: Any) -> None:

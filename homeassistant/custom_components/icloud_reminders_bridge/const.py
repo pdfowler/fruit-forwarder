@@ -5,6 +5,9 @@ from homeassistant.const import Platform
 DOMAIN = "icloud_reminders_bridge"
 PLATFORMS = [Platform.TODO, Platform.CALENDAR]
 PROTOCOL_VERSION = 1
+CAPABILITY_REMINDERS = "reminders"
+CAPABILITY_CALENDARS = "calendars"
+CAPABILITY_COMMAND_QUEUE = "command_queue"
 
 CONF_BRIDGE_ID = "bridge_id"
 CONF_PAIRING_TOKEN = "pairing_token"

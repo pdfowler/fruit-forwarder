@@ -56,7 +56,10 @@ func TestCalendarSnapshotSync(t *testing.T) {
 		if len(payload.Calendars) != 1 || payload.Calendars[0].ID != "events" || payload.Calendars[0].WindowStart == "" || payload.Calendars[0].WindowEnd == "" {
 			t.Errorf("invalid calendar snapshot: %+v", payload.Calendars)
 		}
-		_ = json.NewEncoder(w).Encode(model.SyncResponse{Version: model.ProtocolVersion})
+		_ = json.NewEncoder(w).Encode(model.SyncResponse{
+			Version:      model.ProtocolVersion,
+			Capabilities: []string{model.CapabilityReminders, model.CapabilityCommandQueue, model.CapabilityCalendars},
+		})
 	}))
 	defer server.Close()
 	store := &calendarSyncStore{fakeReminderStore: fakeReminderStore{items: []model.List{}}}
@@ -96,7 +99,10 @@ func TestCalendarFailureDoesNotBlockReminderPublication(t *testing.T) {
 		if len(payload.Lists) != 1 || payload.Calendars != nil {
 			t.Errorf("calendar failure should omit calendars but retain reminders: %+v", payload)
 		}
-		_ = json.NewEncoder(w).Encode(model.SyncResponse{Version: model.ProtocolVersion})
+		_ = json.NewEncoder(w).Encode(model.SyncResponse{
+			Version:      model.ProtocolVersion,
+			Capabilities: []string{model.CapabilityReminders, model.CapabilityCommandQueue, model.CapabilityCalendars},
+		})
 	}))
 	defer server.Close()
 	store := &failingCalendarStore{fakeReminderStore: fakeReminderStore{
@@ -110,6 +116,23 @@ func TestCalendarFailureDoesNotBlockReminderPublication(t *testing.T) {
 	client.httpClient = server.Client()
 	if _, err := client.SyncOnce(context.Background()); err != nil {
 		t.Fatalf("reminder sync failed when calendar read failed: %v", err)
+	}
+}
+
+func TestCalendarSyncRejectsServerWithoutCalendarCapability(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(model.SyncResponse{
+			Version:      model.ProtocolVersion,
+			Capabilities: []string{model.CapabilityReminders, model.CapabilityCommandQueue},
+		})
+	}))
+	defer server.Close()
+	store := &calendarSyncStore{fakeReminderStore: fakeReminderStore{items: []model.List{}}}
+	cfg := &config.Config{BridgeID: "mac", HomeAssistantURL: server.URL, Calendars: []config.List{{ID: "events", Name: "Events"}}}
+	client := New(cfg, "synthetic", store, &state.State{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	client.httpClient = server.Client()
+	if _, err := client.SyncOnce(context.Background()); err == nil || !strings.Contains(err.Error(), "calendar capability") {
+		t.Fatalf("expected calendar capability rejection, got %v", err)
 	}
 }
 

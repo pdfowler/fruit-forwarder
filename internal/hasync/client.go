@@ -22,6 +22,8 @@ import (
 const maxResponseBytes = 1 << 20
 const maxCommands = 1000
 const maxCommandString = 256
+const maxCapabilities = 16
+const maxCapabilityString = 64
 const maxRetryBackoff = 15 * time.Minute
 
 type ReminderStore interface {
@@ -197,6 +199,7 @@ func (c *Client) postSnapshot(ctx context.Context, lists []model.List) (*model.S
 	}
 	payload := model.Snapshot{
 		Calendars:         calendars,
+		Capabilities:      capabilitiesForConfig(c.cfg),
 		Version:           model.ProtocolVersion,
 		BridgeID:          c.cfg.BridgeID,
 		SentAt:            time.Now().UTC(),
@@ -245,6 +248,9 @@ func (c *Client) postSnapshot(ctx context.Context, lists []model.List) (*model.S
 	if len(result.Commands) > maxCommands {
 		return nil, fmt.Errorf("sync response contains too many commands")
 	}
+	if err := validateResponseCapabilities(result.Capabilities, c.cfg); err != nil {
+		return nil, err
+	}
 	for _, command := range result.Commands {
 		if c.state.Has(command.ID) {
 			continue
@@ -284,4 +290,60 @@ func validateCommand(command model.Command) error {
 
 func boundedCommandString(value string) bool {
 	return strings.TrimSpace(value) != "" && len(value) <= maxCommandString
+}
+
+func capabilitiesForConfig(cfg *config.Config) []string {
+	capabilities := []string{model.CapabilityReminders, model.CapabilityCommandQueue}
+	if len(cfg.Calendars) > 0 {
+		capabilities = append(capabilities, model.CapabilityCalendars)
+	}
+	return capabilities
+}
+
+func validateResponseCapabilities(capabilities []string, cfg *config.Config) error {
+	if len(capabilities) == 0 {
+		// Protocol version 1 predates the capability field. Preserve legacy
+		// reminder-only interoperability, but never silently discard calendars.
+		if len(cfg.Calendars) > 0 {
+			return errors.New("Home Assistant does not advertise calendar capability")
+		}
+		return nil
+	}
+	if err := validateCapabilities(capabilities); err != nil {
+		return fmt.Errorf("invalid Home Assistant capabilities: %w", err)
+	}
+	available := make(map[string]struct{}, len(capabilities))
+	for _, capability := range capabilities {
+		available[capability] = struct{}{}
+	}
+	if len(cfg.Lists) > 0 {
+		for _, required := range []string{model.CapabilityReminders, model.CapabilityCommandQueue} {
+			if _, ok := available[required]; !ok {
+				return fmt.Errorf("Home Assistant does not advertise %s capability", required)
+			}
+		}
+	}
+	if len(cfg.Calendars) > 0 {
+		if _, ok := available[model.CapabilityCalendars]; !ok {
+			return errors.New("Home Assistant does not advertise calendar capability")
+		}
+	}
+	return nil
+}
+
+func validateCapabilities(capabilities []string) error {
+	if len(capabilities) > maxCapabilities {
+		return fmt.Errorf("too many capabilities")
+	}
+	seen := make(map[string]struct{}, len(capabilities))
+	for _, capability := range capabilities {
+		if strings.TrimSpace(capability) == "" || len(capability) > maxCapabilityString {
+			return errors.New("capability names must be non-empty and bounded")
+		}
+		if _, exists := seen[capability]; exists {
+			return fmt.Errorf("duplicate capability %q", capability)
+		}
+		seen[capability] = struct{}{}
+	}
+	return nil
 }

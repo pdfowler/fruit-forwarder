@@ -2,7 +2,12 @@ package model
 
 import "time"
 
-const ProtocolVersion = 1
+const (
+	ProtocolVersion        = 1
+	CapabilityReminders    = "reminders"
+	CapabilityCalendars    = "calendars"
+	CapabilityCommandQueue = "command_queue"
+)
 
 type Event struct {
 	UID         string `json:"uid"`
@@ -44,6 +49,7 @@ type List struct {
 
 type Snapshot struct {
 	Calendars         []Calendar `json:"calendars,omitempty"`
+	Capabilities      []string   `json:"capabilities,omitempty"`
 	Version           int        `json:"version"`
 	BridgeID          string     `json:"bridge_id"`
 	SentAt            time.Time  `json:"sent_at"`
@@ -59,6 +65,7 @@ type Command struct {
 }
 
 type SyncResponse struct {
-	Version  int       `json:"version"`
-	Commands []Command `json:"commands"`
+	Version      int       `json:"version"`
+	Capabilities []string  `json:"capabilities,omitempty"`
+	Commands     []Command `json:"commands"`
 }
