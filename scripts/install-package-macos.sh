@@ -56,6 +56,10 @@ if ! mv "${STAGE_EVENTKIT}" "${EVENTKIT_BIN}"; then
   exit 1
 fi
 
+if [[ -L "${CONFIG_DIR}" || -L "${CONFIG_PATH}" ]]; then
+  echo "refusing a symlinked configuration path" >&2
+  exit 2
+fi
 if [[ ! -f "${CONFIG_PATH}" ]]; then
   install -m 0600 "${PACKAGE_DIR}/config.example.json" "${CONFIG_PATH}"
   echo "Created ${CONFIG_PATH}; add exact IDs, then rerun this installer." >&2
