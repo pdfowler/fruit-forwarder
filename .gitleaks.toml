@@ -1,0 +1,3 @@
+[allowlist]
+description = "Historical synthetic webhook token used only by a localhost unit test"
+commits = ["b0e1252d3449bf1307f668e39e6bcabc136d0f42"]
