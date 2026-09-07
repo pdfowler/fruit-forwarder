@@ -34,6 +34,8 @@ class ICloudRemindersBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             token = user_input.get(CONF_PAIRING_TOKEN, "").strip()
             if token and not TOKEN_PATTERN.fullmatch(token):
                 errors[CONF_PAIRING_TOKEN] = "invalid_token"
+            elif token and _token_in_use(self, token, entry):
+                errors["base"] = "already_configured"
             elif not lists and not calendars:
                 errors["base"] = "no_lists"
             else:
@@ -147,5 +149,20 @@ def _bridge_id_in_use(flow: ICloudRemindersBridgeConfigFlow, bridge_id: str) -> 
         return False
     return any(
         entry.data.get(CONF_BRIDGE_ID) == bridge_id
+        for entry in flow.hass.config_entries.async_entries(DOMAIN)
+    )
+
+
+def _token_in_use(
+    flow: ICloudRemindersBridgeConfigFlow,
+    token: str,
+    current_entry: config_entries.ConfigEntry,
+) -> bool:
+    """Prevent two webhook registrations from sharing one bearer token."""
+    if flow.hass is None:
+        return False
+    return any(
+        entry is not current_entry
+        and entry.data.get(CONF_PAIRING_TOKEN) == token
         for entry in flow.hass.config_entries.async_entries(DOMAIN)
     )
