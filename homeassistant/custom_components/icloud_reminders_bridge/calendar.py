@@ -24,6 +24,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         if new:
             async_add_entities(new)
         for entity in entities.values():
+            entity._refresh_name()
             if entity.hass:
                 entity.async_write_ha_state()
 
@@ -62,6 +63,12 @@ class BridgeCalendar(CalendarEntity):
                 summary=item["summary"], uid=item["uid"], description=item.get("description"),
                 location=item.get("location")))
         return sorted(result, key=lambda event: event.start_datetime_local)
+
+    @callback
+    def _refresh_name(self) -> None:
+        calendar = self.runtime.calendars.get(self.uid)
+        if calendar is not None:
+            self._attr_name = calendar["name"]
 
     @property
     def event(self):

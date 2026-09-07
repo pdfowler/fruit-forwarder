@@ -86,6 +86,8 @@ class ICloudReminderTodoEntity(TodoListEntity):
         """Adopt the latest EventKit-confirmed or optimistic state."""
         reminder_list = self._runtime.lists.get(self._list_id)
         self._attr_available = reminder_list is not None
+        if reminder_list is not None:
+            self._attr_name = reminder_list["name"]
         self._attr_supported_features = (
             self._writable_features
             if reminder_list is not None and not reminder_list.get("read_only")

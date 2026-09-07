@@ -40,3 +40,19 @@ async def test_writable_list_exposes_mutation_features(tmp_path):
         TodoItem(summary="Queued", status=TodoItemStatus.NEEDS_ACTION)
     )
     assert bridge.commands[-1]["action"] == "create"
+
+
+@pytest.mark.asyncio
+async def test_renamed_list_updates_friendly_name_without_changing_identity(tmp_path):
+    bridge = runtime(tmp_path)
+    await bridge.async_process_snapshot(snapshot())
+    entity = ICloudReminderTodoEntity(bridge, "allowed")
+    unique_id = entity.unique_id
+
+    renamed = snapshot()
+    renamed["lists"][0]["name"] = "Renamed Tasks"
+    await bridge.async_process_snapshot(renamed)
+    entity.async_refresh_from_runtime(write_state=False)
+
+    assert entity.name == "Renamed Tasks"
+    assert entity.unique_id == unique_id

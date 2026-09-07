@@ -71,3 +71,20 @@ async def test_calendar_save_failure_rolls_back(tmp_path):
     with pytest.raises(OSError):
         await bridge.async_process_snapshot(calendar_payload())
     assert bridge.calendars == {}
+
+
+@pytest.mark.asyncio
+async def test_renamed_calendar_updates_friendly_name_without_changing_identity(tmp_path):
+    bridge = runtime(tmp_path)
+    bridge.entry.data["allowed_calendar_ids"] = ["events"]
+    await bridge.async_process_snapshot(calendar_payload())
+    entity = BridgeCalendar(bridge, "events")
+    unique_id = entity.unique_id
+
+    renamed = calendar_payload()
+    renamed["calendars"][0]["name"] = "Renamed Events"
+    await bridge.async_process_snapshot(renamed)
+    entity._refresh_name()
+
+    assert entity.name == "Renamed Events"
+    assert entity.unique_id == unique_id
