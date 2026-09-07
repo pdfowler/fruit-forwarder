@@ -75,6 +75,9 @@ explicit resolution only after checking Apple Reminders:
 "$bridge" recover --command-id COMMAND_ID --resolution retry
 ```
 
+See [command-lifecycle.md](command-lifecycle.md) for the full queued,
+withheld, in-flight, confirmed, retryable, and uncertain state model.
+
 Each installation keeps the previous executable pair under
 `~/Library/Application Support/icloud-reminders-bridge/rollback/`. If a new
 build fails its lifecycle check, stop the service and pass one of those exact
