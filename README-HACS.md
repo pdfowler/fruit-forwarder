@@ -16,3 +16,7 @@ edit calendar events, or discover data outside its configured allowlist.
 
 See the main Fruit Forwarder documentation for Mac installation, MCP setup,
 security boundaries, compatibility and troubleshooting.
+
+- Source and cross-target documentation: [Fruit Forwarder](https://github.com/pdfowler/fruit-forwarder)
+- HA release history: [releases](https://github.com/pdfowler/ha-fruit-forwarder/releases)
+- Contributions and bug reports: use the [main repository issue tracker](https://github.com/pdfowler/fruit-forwarder/issues)
