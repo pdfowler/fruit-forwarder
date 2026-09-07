@@ -12,6 +12,7 @@ for Home Assistant and local MCP configuration.
 See the [compatibility matrix](docs/compatibility.md) for the current support
 claim and [architecture decisions](docs/adr/) for the monorepo and trust-boundary
 choices.
+For issue-reporting boundaries and redaction guidance, see [SUPPORT.md](SUPPORT.md).
 Release history is tracked in [CHANGELOG.md](CHANGELOG.md).
 The release gate is tracked in [docs/acceptance-evidence.md](docs/acceptance-evidence.md).
 Mutation and recovery semantics are documented in [docs/command-lifecycle.md](docs/command-lifecycle.md).

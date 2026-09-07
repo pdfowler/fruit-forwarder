@@ -12,6 +12,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   native build recipe.
 - Harden the guarded HACS publication workflow against shell interpolation and
   accidental destination repositories.
+- Add a public-facing support policy with compatibility, redaction, and security
+  reporting boundaries.
 - Align the Go module path with the planned public `fruit-forwarder`
   repository so downstream builds and release metadata use one canonical
   source identity.
