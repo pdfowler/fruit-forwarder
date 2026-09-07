@@ -19,6 +19,8 @@ Before running it:
    metadata and is byte-for-byte reproducible when its staged binaries are
    unchanged; the unsigned MCPB ZIP receives the same timestamp/order
    normalization before any optional signature is applied.
+   The manifest also records the compatibility manifest, host toolchain
+   versions, and MCPB package-tool version used for that candidate.
 4. Complete the real Mac/HA/MCP acceptance matrix in `PROJECT-PLAN.md`,
    using the redacted ledger in [acceptance-evidence.md](acceptance-evidence.md),
    including disposable reminders/calendars and rollback evidence.

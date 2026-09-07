@@ -6,8 +6,24 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import platform
 from pathlib import Path
 import subprocess
+
+
+def command_version(command: list[str]) -> str | None:
+    try:
+        result = subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    line = (result.stdout or result.stderr).splitlines()
+    return line[0].strip() if line else None
 
 
 def main() -> None:
@@ -19,6 +35,7 @@ def main() -> None:
     root = args.root.resolve()
     version = args.version or (root / "release/VERSION").read_text().strip()
     output = args.output or root / "dist/release-manifest.json"
+    compatibility = json.loads((root / "release/compatibility.json").read_text())
 
     artifacts: list[dict[str, object]] = []
     for directory in (root / "dist/ha", root / "dist/macos", root / "dist/mcp"):
@@ -50,6 +67,16 @@ def main() -> None:
     result = {
         "product": "Fruit Forwarder",
         "version": version,
+        "compatibility": compatibility,
+        "toolchains": {
+            "platform": platform.platform(),
+            "python": platform.python_version(),
+            "go": command_version(["go", "version"]),
+            "swift": command_version(["swift", "--version"]),
+        },
+        "package_tools": {
+            "mcpb_cli": os.environ.get("MCPB_VERSION", "2.1.2"),
+        },
         "source_revision": subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=root, text=True
         ).strip(),

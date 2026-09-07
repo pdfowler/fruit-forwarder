@@ -41,10 +41,10 @@ task release:prepare
 ```
 
 `dist/release-manifest.json` is the authoritative candidate index. It records
-the source revision, dirty-tree state, counterpart versions, and SHA-256
-values for the HA, macOS, and MCP artifacts. The manifest is not publication
-evidence by itself: it must be paired with the installed acceptance records
-below.
+the source revision, dirty-tree state, compatibility/counterpart versions,
+host toolchain and package-tool versions, and SHA-256 values for the HA, macOS,
+and MCP artifacts. The manifest is not publication evidence by itself: it must
+be paired with the installed acceptance records below.
 
 ## Installed acceptance record template
 
