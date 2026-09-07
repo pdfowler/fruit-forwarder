@@ -337,11 +337,15 @@ func (c *Client) acceptQueueEpoch(epoch string) error {
 		return nil
 	}
 	if c.state.QueueEpoch == "" {
-		c.state.QueueEpoch = epoch
 		if c.cfg.StatePath != "" {
+			previous := c.state.QueueEpoch
+			c.state.QueueEpoch = epoch
 			if err := c.state.Save(c.cfg.StatePath); err != nil {
+				c.state.QueueEpoch = previous
 				return fmt.Errorf("persist Home Assistant queue epoch: %w", err)
 			}
+		} else {
+			c.state.QueueEpoch = epoch
 		}
 		return nil
 	}

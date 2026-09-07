@@ -187,6 +187,28 @@ func TestQueueEpochOmissionAfterPairingFailsClosed(t *testing.T) {
 	}
 }
 
+func TestQueueEpochPersistenceFailureDoesNotAdoptEpochInMemory(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(model.SyncResponse{
+			Version:      model.ProtocolVersion,
+			Capabilities: []string{model.CapabilityReminders, model.CapabilityCommandQueue, model.CapabilityQueueEpoch},
+			QueueEpoch:   "epoch-one",
+		})
+	}))
+	defer server.Close()
+	statePath := t.TempDir()
+	cfg := &config.Config{BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s", StatePath: statePath}
+	bridgeState := &state.State{}
+	client := New(cfg, "token", &fakeReminderStore{}, bridgeState, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	client.httpClient = server.Client()
+	if _, err := client.SyncOnce(context.Background()); err == nil || !strings.Contains(err.Error(), "persist Home Assistant queue epoch") {
+		t.Fatalf("expected queue epoch persistence failure, got %v", err)
+	}
+	if bridgeState.QueueEpoch != "" {
+		t.Fatalf("failed persistence adopted epoch %q in memory", bridgeState.QueueEpoch)
+	}
+}
+
 func TestCalendarSyncRejectsServerWithoutCalendarCapability(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(model.SyncResponse{
