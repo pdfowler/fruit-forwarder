@@ -156,7 +156,7 @@ or MCP Registry entry remains an explicit maintainer step.
 If this Mac still runs the former `home-ctrl` deployment, pass
 `--migrate-home-ctrl` to the packaged installer. It copies the existing
 configuration, preserves its explicit Keychain/state paths, and retires the
-legacy LaunchAgent only when activation is requested. Review the copied config
+legacy LaunchAgent when that migration is activated. Review the copied config
 before the second installer invocation; do not run both services at once.
 
 To stop and remove only the installed service files while preserving household

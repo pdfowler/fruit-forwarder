@@ -11,9 +11,9 @@ The standalone distribution uses the maintainer-owned reverse-DNS identity
 `home-ctrl` deployment (`net.pdfowler.icloud-reminders-bridge`) or the earlier
 prototype identity (`com.example.icloud-reminders-bridge`) should keep their
 current runtime config and Keychain item while testing the new build. The
-installer stops those legacy LaunchAgents only when the explicit
-`--migrate-home-ctrl` option is supplied, then activates the stable one. The
-migration copies the old config into the standalone config path and preserves
+installer requires the explicit `--migrate-home-ctrl` option before copying a
+home-ctrl config, then stops those legacy LaunchAgents when that migration is
+activated. The migration copies the old config into the standalone path and preserves
 its explicit legacy Keychain and state paths, so the existing pairing and
 acknowledgement ledger remain available. Review the copied config before
 activation.
