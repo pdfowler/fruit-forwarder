@@ -41,9 +41,13 @@ After the GitHub release exists:
   it does not publish from a branch or a dirty checkout.
 - Submit the HACS repository first as a custom repository, then request default
   catalog inclusion once the required release and validation checks are live.
-- Publish `dist/mcp/server.json` with `mcp-publisher` only after the MCPB URL and
-  SHA-256 are immutable. Verify a clean MCP client can fetch and install the
-  exact artifact.
+- Run the guarded `Publish MCP Registry metadata` workflow from the matching
+  version tag after configuring the protected `mcp-release` environment. Type
+  `PUBLISH_MCP`; it downloads the already-created release assets, rechecks the
+  MCPB checksum, release URL and `io.github.pdfowler/fruit-forwarder` namespace,
+  then authenticates with GitHub OIDC before publishing `server.json`. It does
+  not build or publish a package from a branch or working tree. Verify a clean
+  MCP client can fetch and install the exact artifact.
 
 If one target fails, leave the release partial and record the per-target status;
 do not rebuild a different artifact under an already published version.

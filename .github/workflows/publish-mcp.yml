@@ -1,0 +1,82 @@
+name: Publish MCP Registry metadata
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type PUBLISH_MCP to publish the tagged MCP metadata
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: ${{ inputs.confirm == 'PUBLISH_MCP' && startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    environment: mcp-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out the tagged source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag, version, and source provenance
+        run: |
+          version="$(tr -d '[:space:]' < release/VERSION)"
+          test "${GITHUB_REF_NAME}" = "v${version}"
+          test -z "$(git status --porcelain)"
+          scripts/check-git-attribution.sh
+
+      - name: Download the immutable GitHub release candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist/mcp
+          gh release download "${GITHUB_REF_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --pattern 'fruit-forwarder-mcp-*.mcpb' \
+            --pattern 'fruit-forwarder-mcp-*.mcpb.sha256' \
+            --pattern 'server.json' \
+            --dir dist/mcp \
+            --clobber
+
+      - name: Validate the downloaded package and registry metadata
+        run: |
+          version="$(tr -d '[:space:]' < release/VERSION)"
+          scripts/check-mcp-package.sh "${version}"
+          python3 - "${version}" <<'PY'
+          import json
+          import sys
+
+          version = sys.argv[1]
+          metadata = json.load(open("dist/mcp/server.json"))
+          package = metadata["packages"][0]
+          expected = (
+              f"https://github.com/{__import__('os').environ['GITHUB_REPOSITORY']}"
+              f"/releases/download/v{version}/fruit-forwarder-mcp-{version}.mcpb"
+          )
+          if package.get("identifier") != expected:
+              raise SystemExit("Registry metadata does not point to this tagged release")
+          if metadata.get("name") != "io.github.pdfowler/fruit-forwarder":
+              raise SystemExit("unexpected MCP Registry namespace")
+          PY
+
+      - name: Install the MCP Registry publisher
+        run: |
+          curl --fail --location --silent --show-error \
+            "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
+            --output "${RUNNER_TEMP}/mcp-publisher.tar.gz"
+          tar -xzf "${RUNNER_TEMP}/mcp-publisher.tar.gz" -C "${RUNNER_TEMP}" mcp-publisher
+          chmod 0755 "${RUNNER_TEMP}/mcp-publisher"
+
+      - name: Authenticate with GitHub OIDC
+        run: '"${RUNNER_TEMP}/mcp-publisher" login github-oidc'
+
+      - name: Publish the verified metadata
+        working-directory: dist/mcp
+        run: '"${RUNNER_TEMP}/mcp-publisher" publish'
