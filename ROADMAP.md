@@ -20,7 +20,8 @@ Before a broadly recommended release:
   scope rejection, and rollback on storage failure or task cancellation;
   they also cover revocation across restart and paused dispatch for unavailable
   or read-only lists;
-  HTTP webhook and complete entity lifecycle coverage remain open.
+  HTTP webhook boundaries and synthetic entity lifecycle cases are covered;
+  complete installed-HA lifecycle coverage remains open.
 - Document and test create replay behavior across crashes: an EventKit save
   and the local acknowledgement are separate operations, so a crash between
   them can duplicate a creation.
