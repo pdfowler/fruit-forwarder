@@ -84,6 +84,7 @@ Record each decision with rationale, alternatives, consequences and a verificati
 | Calendar coverage | Retain explicit cached bounds; validate the current 30-day-past/90-day-future default | HA calendar navigation, resource use and user expectations |
 | Reminder conflict policy | Detect conflicts or apply narrowly scoped field updates instead of silently overwriting unrelated changes | Correctness when HA, MCP and Apple clients edit concurrently |
 | Ambiguous creation recovery | Never blindly retry a creation whose outcome is unknown | Avoid duplicate reminders after crashes or timeouts |
+| Monorepo orchestration | Keep one `fruit-forwarder` source repository and use Task plus native Go/Swift/Python toolchains; generate HA, macOS and MCP artifacts from one reviewed revision | Coordinated protocol changes, repeatable deployments and ecosystem-specific packages without duplicated implementations |
 | Distribution | Separate Mac/MCP and HACS installation packages; two repositories and one shared native engine | Ecosystem-specific installation and releases without duplicating EventKit implementation |
 
 Avoid a second implementation of CalDAV. Explain when users should keep their existing CalDAV calendars, when EventKit adds value, and how to avoid duplicate dashboard entities.
