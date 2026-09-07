@@ -6,6 +6,9 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
 
 ## Unreleased
 
+- Align the Go module path with the planned public `fruit-forwarder`
+  repository so downstream builds and release metadata use one canonical
+  source identity.
 - Standardize the packaged native identity as `com.pdfowler.fruitforwarder`
   and add an explicit migration path from the former home-ctrl deployment.
 - Add a redacted R1–R10 acceptance ledger and release-manifest toolchain

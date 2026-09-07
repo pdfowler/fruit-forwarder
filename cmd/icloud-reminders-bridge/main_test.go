@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/pdfowler/icloud-reminders-bridge/internal/config"
-	"github.com/pdfowler/icloud-reminders-bridge/internal/model"
-	"github.com/pdfowler/icloud-reminders-bridge/internal/state"
+	"github.com/pdfowler/fruit-forwarder/internal/config"
+	"github.com/pdfowler/fruit-forwarder/internal/model"
+	"github.com/pdfowler/fruit-forwarder/internal/state"
 )
 
 // This crosses the real CLI/stdio/helper-process boundary, using synthetic

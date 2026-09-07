@@ -12,7 +12,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/pdfowler/icloud-reminders-bridge/internal/model"
+	"github.com/pdfowler/fruit-forwarder/internal/model"
 )
 
 // Acquire prevents two bridge processes from applying the same HA command at

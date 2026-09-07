@@ -1,4 +1,4 @@
-module github.com/pdfowler/icloud-reminders-bridge
+module github.com/pdfowler/fruit-forwarder
 
 go 1.24.5
 

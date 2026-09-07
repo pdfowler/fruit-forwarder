@@ -8,7 +8,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/pdfowler/icloud-reminders-bridge/internal/model"
+	"github.com/pdfowler/fruit-forwarder/internal/model"
 )
 
 type ReminderStore interface {

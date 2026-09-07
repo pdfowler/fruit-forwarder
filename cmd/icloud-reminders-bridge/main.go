@@ -13,12 +13,12 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/pdfowler/icloud-reminders-bridge/internal/config"
-	"github.com/pdfowler/icloud-reminders-bridge/internal/hasync"
-	"github.com/pdfowler/icloud-reminders-bridge/internal/keychain"
-	"github.com/pdfowler/icloud-reminders-bridge/internal/mcpserver"
-	"github.com/pdfowler/icloud-reminders-bridge/internal/reminderstore"
-	"github.com/pdfowler/icloud-reminders-bridge/internal/state"
+	"github.com/pdfowler/fruit-forwarder/internal/config"
+	"github.com/pdfowler/fruit-forwarder/internal/hasync"
+	"github.com/pdfowler/fruit-forwarder/internal/keychain"
+	"github.com/pdfowler/fruit-forwarder/internal/mcpserver"
+	"github.com/pdfowler/fruit-forwarder/internal/reminderstore"
+	"github.com/pdfowler/fruit-forwarder/internal/state"
 )
 
 // version is injected by release builds; development builds report dev.

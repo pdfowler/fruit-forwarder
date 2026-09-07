@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/pdfowler/icloud-reminders-bridge/internal/config"
-	"github.com/pdfowler/icloud-reminders-bridge/internal/model"
+	"github.com/pdfowler/fruit-forwarder/internal/config"
+	"github.com/pdfowler/fruit-forwarder/internal/model"
 )
 
 func DiscoverCalendars(ctx context.Context, helperPath string) ([]model.Calendar, error) {

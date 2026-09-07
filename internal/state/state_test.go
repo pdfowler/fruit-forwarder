@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pdfowler/icloud-reminders-bridge/internal/model"
+	"github.com/pdfowler/fruit-forwarder/internal/model"
 )
 
 func TestStateRoundTripAndDeduplication(t *testing.T) {
