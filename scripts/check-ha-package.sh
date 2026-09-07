@@ -29,6 +29,7 @@ required = {
     root + "custom_components/icloud_reminders_bridge/__init__.py",
     root + "hacs.json",
     root + "brand/icon.png",
+    root + "fruit-forwarder-source.json",
     root + "README.md",
 }
 with zipfile.ZipFile(archive) as bundle:
@@ -42,5 +43,8 @@ with zipfile.ZipFile(archive) as bundle:
     manifest = json.loads(bundle.read(root + "custom_components/icloud_reminders_bridge/manifest.json"))
     if manifest.get("version") != version:
         raise SystemExit("HA archive manifest version does not match archive version")
+    source = json.loads(bundle.read(root + "fruit-forwarder-source.json"))
+    if len(source.get("source_revision", "")) != 40 or source.get("source_dirty"):
+        raise SystemExit("HA archive source metadata is missing or dirty")
 print("validated HA archive, checksum, and manifest")
 PY

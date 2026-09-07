@@ -27,6 +27,26 @@ fi
 find "$out_dir" -type d -name '__pycache__' -prune -exec rm -rf {} +
 find "$out_dir" -type f -name '*.pyc' -delete
 
+source_revision="$(git -C "${repo_dir}" rev-parse HEAD)"
+source_dirty=false
+if [[ -n "$(git -C "${repo_dir}" status --porcelain)" ]]; then
+  source_dirty=true
+fi
+python3 - "${out_dir}" "${source_revision}" "${source_dirty}" <<'PY'
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+metadata = {
+    "product": "Fruit Forwarder",
+    "source_repository": "https://github.com/pdfowler/fruit-forwarder",
+    "source_revision": sys.argv[2],
+    "source_dirty": sys.argv[3] == "true",
+}
+(root / "fruit-forwarder-source.json").write_text(json.dumps(metadata, indent=2) + "\n")
+PY
+
 python3 - "$out_dir" <<'PY'
 import json
 import pathlib
@@ -43,6 +63,9 @@ if manifest["domain"] != "icloud_reminders_bridge":
     raise SystemExit("unexpected integration domain")
 if not (root / "brand" / "icon.png").is_file():
     raise SystemExit("brand/icon.png is required for HACS export")
+source = json.loads((root / "fruit-forwarder-source.json").read_text())
+if not source.get("source_revision") or len(source["source_revision"]) != 40:
+    raise SystemExit("fruit-forwarder-source.json must contain a full source revision")
 for workflow in ("validate.yml", "hassfest.yml"):
     if not (root / ".github" / "workflows" / workflow).is_file():
         raise SystemExit(f"missing HACS release workflow: {workflow}")
