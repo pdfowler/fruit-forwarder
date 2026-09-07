@@ -22,7 +22,9 @@ Before running it:
    unchanged; the unsigned MCPB ZIP receives the same timestamp/order
    normalization before any optional signature is applied.
    The manifest also records the compatibility manifest, host toolchain
-   versions, and MCPB package-tool version used for that candidate.
+   versions, and MCPB package-tool version used for that candidate. The
+   manifest verifier rechecks the recorded source revision, artifact paths,
+   sizes, and hashes before publication.
 4. Complete the real Mac/HA/MCP acceptance matrix in `PROJECT-PLAN.md`,
    using the redacted ledger in [acceptance-evidence.md](acceptance-evidence.md),
    including disposable reminders/calendars and rollback evidence.
@@ -50,6 +52,11 @@ After the GitHub release exists:
   tarball, then authenticates with GitHub OIDC before publishing `server.json`.
   It does not build or publish a package from a branch or working tree. Verify a
   clean MCP client can fetch and install the exact artifact.
+
+The confirmed GitHub release workflow reconstructs and verifies the unified
+manifest after the HA and macOS artifacts have been merged. A manifest from a
+single preparation job is not treated as sufficient provenance for the whole
+release.
 
 If one target fails, leave the release partial and record the per-target status;
 do not rebuild a different artifact under an already published version.
