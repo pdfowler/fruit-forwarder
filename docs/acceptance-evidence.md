@@ -46,6 +46,20 @@ host toolchain and package-tool versions, and SHA-256 values for the HA, macOS,
 and MCP artifacts. The manifest is not publication evidence by itself: it must
 be paired with the installed acceptance records below.
 
+### Dean live observation (2026-09-07)
+
+- The legacy `net.pdfowler.icloud-reminders-bridge` LaunchAgent is still the
+  active writer; the new `com.pdfowler.fruitforwarder` service is not loaded.
+- The legacy EventKit helper carries the
+  `net.pdfowler.icloud-reminders-bridge.eventkit` identity, and repeated sync
+  attempts report `XPC error communicating with calaccessd: Unknown error`.
+- Direct foreground discovery using that same legacy binary reproduces the
+  error, so the failure is not attributed solely to the old `launchctl asuser`
+  wrapper.
+- No legacy service was stopped, migrated, or permission-reset during this
+  observation. Fresh stable-identity permissions and lifecycle testing remain
+  required before claiming R1/M1 background support.
+
 ## Installed acceptance record template
 
 Create one redacted record per run, for example under a maintainer-controlled
