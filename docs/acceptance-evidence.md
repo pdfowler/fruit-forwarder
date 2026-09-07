@@ -46,6 +46,14 @@ host toolchain and package-tool versions, and SHA-256 values for the HA, macOS,
 and MCP artifacts. The manifest is not publication evidence by itself: it must
 be paired with the installed acceptance records below.
 
+The macOS artifact from revision `4d9742f` was also exercised through
+`task install:local` in an isolated temporary `HOME` with
+`INSTALL_ONLY=true`. The wrapper verified the archive/checksum, rejected no
+unexpected members, staged both executables and created only the example
+configuration; it did not touch the real user profile or activate launchd.
+This proves the packaged staging path, not permissions, EventKit access,
+upgrade/rollback, or background service health.
+
 ### Dean live observation (2026-09-07)
 
 - The legacy `net.pdfowler.icloud-reminders-bridge` LaunchAgent is still the
