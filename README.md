@@ -107,6 +107,7 @@ the common cross-target commands:
 ```sh
 task check          # Go, HA, metadata and script checks
 task test           # Go, HA, and native EventKit tests when running on macOS
+task build:macos    # build staged Go/native outputs on macOS
 task package:ha    # build the HACS tree and versioned HA archive
 task package:macos # build a versioned macOS tarball on macOS
 task package:mcp   # build the macOS MCPB and candidate registry metadata

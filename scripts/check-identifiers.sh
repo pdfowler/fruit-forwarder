@@ -28,7 +28,7 @@ stable_files = [
 helper_files = [
     "deployment/eventkit-helper-Info.plist",
     "Taskfile.yml",
-    "scripts/package-macos.sh",
+    "scripts/build-macos.sh",
     "scripts/package-mcpb.sh",
     ".github/workflows/ci.yml",
 ]

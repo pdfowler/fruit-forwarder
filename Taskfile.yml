@@ -31,7 +31,7 @@ tasks:
       - python3 -m json.tool homeassistant/custom_components/icloud_reminders_bridge/manifest.json >/dev/null
       - python3 -m json.tool release/compatibility.json >/dev/null
       - bash -n scripts/install-macos.sh scripts/install-package-macos.sh scripts/install-artifact-macos.sh scripts/uninstall-macos.sh scripts/rollback-macos.sh scripts/export-hacs.sh scripts/render-mcp-server-json.sh scripts/check-identifiers.sh scripts/check-git-attribution.sh
-      - bash -n scripts/package-ha.sh scripts/package-macos.sh scripts/package-mcpb.sh scripts/check-hacs-export.sh scripts/check-ha-package.sh scripts/check-macos-package.sh scripts/check-mcp-package.sh
+      - bash -n scripts/build-macos.sh scripts/package-ha.sh scripts/package-macos.sh scripts/package-mcpb.sh scripts/check-hacs-export.sh scripts/check-ha-package.sh scripts/check-macos-package.sh scripts/check-mcp-package.sh
 
   test:go:
     cmds:
@@ -60,7 +60,7 @@ tasks:
       - swiftc -O -parse-as-library eventkit-helper/main.swift -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist -Xlinker "$(pwd)/deployment/eventkit-helper-Info.plist" -o dist/native/icloud-reminders-eventkit
       - codesign --force --sign - --options runtime --identifier com.pdfowler.fruitforwarder.eventkit --entitlements deployment/reminders.entitlements dist/native/icloud-reminders-eventkit
       - codesign --verify --strict dist/native/icloud-reminders-eventkit
-      - python3 scripts/test-native-calendar.py
+      - FRUIT_FORWARDER_EVENTKIT_BINARY="$(pwd)/dist/native/icloud-reminders-eventkit" python3 scripts/test-native-calendar.py
 
   metadata:check:
     cmds:
@@ -86,6 +86,11 @@ tasks:
     deps: [metadata:check]
     cmds:
       - scripts/package-ha.sh {{.VERSION}}
+
+  build:macos:
+    platforms: [darwin]
+    cmds:
+      - scripts/build-macos.sh {{.VERSION}}
 
   package:macos:
     platforms: [darwin]

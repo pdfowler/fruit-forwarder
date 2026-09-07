@@ -19,20 +19,8 @@ staging="$(mktemp -d "${TMPDIR:-/tmp}/fruit-forwarder-macos.XXXXXX")"
 trap 'rm -rf "${staging}"' EXIT
 mkdir -p "${staging}/fruit-forwarder-macos-${version}/bin" "${staging}/fruit-forwarder-macos-${version}/deployment" "${staging}/fruit-forwarder-macos-${version}/scripts"
 
-go build -trimpath -ldflags "-X main.version=${version}" \
-  -o "${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-bridge" \
-  "${repo_dir}/cmd/icloud-reminders-bridge"
-swiftc -O -parse-as-library "${repo_dir}/eventkit-helper/main.swift" \
-  -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
-  -Xlinker "${repo_dir}/deployment/eventkit-helper-Info.plist" \
-  -o "${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-eventkit"
-codesign --force --sign - --options runtime \
-  --identifier com.pdfowler.fruitforwarder.eventkit \
-  --entitlements "${repo_dir}/deployment/reminders.entitlements" \
-  "${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-eventkit"
-codesign --verify --strict "${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-eventkit"
-FRUIT_FORWARDER_EVENTKIT_BINARY="${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-eventkit" \
-  python3 "${repo_dir}/scripts/test-native-calendar.py"
+"${repo_dir}/scripts/build-macos.sh" \
+  "${version}" "${staging}/fruit-forwarder-macos-${version}"
 
 cp "${repo_dir}/deployment/com.pdfowler.fruitforwarder.plist.tmpl" \
   "${staging}/fruit-forwarder-macos-${version}/deployment/"
@@ -45,7 +33,6 @@ cp "${repo_dir}/scripts/install-package-macos.sh" "${staging}/fruit-forwarder-ma
 cp "${repo_dir}/scripts/rollback-macos.sh" "${staging}/fruit-forwarder-macos-${version}/scripts/"
 cp "${repo_dir}/scripts/uninstall-macos.sh" "${staging}/fruit-forwarder-macos-${version}/scripts/"
 cp "${repo_dir}/scripts/render-launchagent.py" "${staging}/fruit-forwarder-macos-${version}/scripts/"
-chmod 0755 "${staging}/fruit-forwarder-macos-${version}/bin/"*
 chmod 0755 "${staging}/fruit-forwarder-macos-${version}/scripts/"*.sh
 
 "${staging}/fruit-forwarder-macos-${version}/bin/icloud-reminders-bridge" version | grep -Fx "${version}" >/dev/null

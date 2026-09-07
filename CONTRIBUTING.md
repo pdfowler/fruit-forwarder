@@ -35,7 +35,8 @@ reports that host-specific portion as skipped rather than pretending it ran.
 
 `task package:ha` produces the reviewable HACS tree under `dist/` and
 `scripts/check-hacs-export.sh` verifies that the export is deterministic. The
-Mac and native targets are host-specific; CI builds them on macOS. Keep
+`task build:macos` produces the shared staged Go/native outputs used by the
+macOS package path. The Mac and native targets are host-specific; CI builds them on macOS. Keep
 generated `build/` and `dist/` output out of commits.
 
 The Go suite also builds a bridge subprocess and exercises its real stdio MCP

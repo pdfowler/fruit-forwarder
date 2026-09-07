@@ -6,6 +6,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
 
 ## Unreleased
 
+- Add a shared `task build:macos` target and route the macOS package through
+  the same staged native build and boundary-test path.
 - Align the Go module path with the planned public `fruit-forwarder`
   repository so downstream builds and release metadata use one canonical
   source identity.
