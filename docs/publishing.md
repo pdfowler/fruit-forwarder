@@ -53,6 +53,16 @@ After the GitHub release exists:
   It does not build or publish a package from a branch or working tree. Verify a
   clean MCP client can fetch and install the exact artifact.
 
+The current official MCP Registry package guidance supports `registryType:
+"mcpb"` entries that point to a versioned GitHub or GitLab release asset and
+carry its `fileSha256`; the registry stores metadata rather than the MCPB
+bytes. The generated `server.json` follows that package shape. HACS requires a
+public GitHub repository with one integration under `custom_components/`, the
+required manifest keys, brand assets, passing HACS and Hassfest actions, and at
+least one full release before default-catalog submission. Recheck the upstream
+requirements during the final publication review because both ecosystems are
+independently maintained. See the [MCPB package guidance](https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/package-types.mdx), [HACS integration requirements](https://hacs.xyz/docs/publish/integration/), and [HACS default-repository requirements](https://hacs.xyz/docs/publish/include/) during that review.
+
 The confirmed GitHub release workflow reconstructs and verifies the unified
 manifest after the HA and macOS artifacts have been merged. A manifest from a
 single preparation job is not treated as sufficient provenance for the whole
