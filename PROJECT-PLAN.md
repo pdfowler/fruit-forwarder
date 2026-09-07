@@ -318,7 +318,7 @@ Design a separate milestone for authenticated network transport: supported MCP a
 
 - Write a threat model covering the Mac user, other local users, MCP clients, LAN clients, HA, reverse proxies, backups, and malicious content returned from reminders/calendars.
 - Audit OS permissions versus application allowlists at every boundary. Include restored state, reconfiguration, helper responses and command execution.
-- Review Keychain integration. The current `security add-generic-password ... -w <token>` path passes the secret as a process argument; replace or explicitly resolve this exposure with a safer native API before claiming comprehensive token protection.
+- Review Keychain integration. Pairing now supplies the token on the `security` command's standard input rather than as a process argument; still verify Keychain ACLs, prompts, clipboard exposure and app-launched behavior before claiming comprehensive token protection.
 - Review clipboard pairing: token lifetime, accidental logging, clipboard-manager exposure, recovery and optional clearing behavior. Never call a persistent bearer token a single-use code.
 - Ensure tokens do not appear in errors, trace logs, reverse-proxy access logs, crash reports, process listings or support bundles. Cover Calendar contents as well as Reminders.
 - Harden config, binary and state ownership/permissions, including symlinks and parent-directory trust. Verify installation cannot accidentally broaden access.
