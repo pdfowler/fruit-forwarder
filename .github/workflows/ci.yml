@@ -45,19 +45,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go test -race ./...
-      - run: go vet ./...
+      - name: Install Task
+        run: brew install go-task
+      - run: task metadata:check
+      - run: task test:go
       - run: bash -n scripts/install-macos.sh
-      - name: Build native EventKit helper
-        run: |
-          mkdir -p build
-          swiftc -O -parse-as-library eventkit-helper/main.swift \
-            -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
-            -Xlinker "$PWD/deployment/eventkit-helper-Info.plist" \
-            -o build/icloud-reminders-eventkit
-          codesign --force --sign - --options runtime \
-            --identifier com.pdfowler.fruitforwarder.eventkit \
-            --entitlements deployment/reminders.entitlements \
-            build/icloud-reminders-eventkit
-          codesign --verify --strict build/icloud-reminders-eventkit
-      - run: python3 scripts/test-native-calendar.py
+      - run: task test:native
+      - run: task build:macos
