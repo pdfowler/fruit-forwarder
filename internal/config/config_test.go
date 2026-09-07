@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -97,5 +98,33 @@ func TestLoadRejectsUntrustedConfigPath(t *testing.T) {
 	}
 	if _, err := Load(link); err == nil {
 		t.Fatal("symlinked config accepted")
+	}
+}
+
+func TestValidateBoundsConfigCollectionsAndStrings(t *testing.T) {
+	t.Parallel()
+	tooLongBridge := Config{BridgeID: strings.Repeat("x", maxStringLength+1)}
+	if err := tooLongBridge.Validate(); err == nil {
+		t.Fatal("oversized bridge ID accepted")
+	}
+	tooManyLists := Config{BridgeID: "mac", Lists: make([]List, maxLists+1)}
+	if err := tooManyLists.Validate(); err == nil {
+		t.Fatal("oversized list collection accepted")
+	}
+	tooLongListID := Config{BridgeID: "mac", Lists: []List{{ID: strings.Repeat("x", maxStringLength+1), Name: "Tasks"}}}
+	if err := tooLongListID.Validate(); err == nil {
+		t.Fatal("oversized list ID accepted")
+	}
+}
+
+func TestLoadRejectsOversizedConfig(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	if err := os.WriteFile(path, append([]byte(`{"bridge_id":"mac","lists":[]}`), []byte(strings.Repeat(" ", maxConfigBytes))...), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(path); err == nil {
+		t.Fatal("oversized config accepted")
 	}
 }

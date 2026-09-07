@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -31,6 +32,14 @@ type Config struct {
 	Calendars          []List `json:"calendars,omitempty"`
 }
 
+const (
+	maxConfigBytes  = 256 * 1024
+	maxLists        = 100
+	maxStringLength = 256
+	maxURLLength    = 2048
+	maxPathLength   = 4096
+)
+
 func DefaultPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".config", "icloud-reminders-bridge", "config.json")
@@ -40,9 +49,17 @@ func Load(path string) (*Config, error) {
 	if err := validateConfigPath(path); err != nil {
 		return nil, fmt.Errorf("config file: %w", err)
 	}
-	data, err := os.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
+	}
+	defer file.Close()
+	data, err := io.ReadAll(io.LimitReader(file, maxConfigBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("read config: %w", err)
+	}
+	if len(data) > maxConfigBytes {
+		return nil, fmt.Errorf("config exceeds %d bytes", maxConfigBytes)
 	}
 	var cfg Config
 	if err := json.Unmarshal(data, &cfg); err != nil {
@@ -83,8 +100,11 @@ func validateConfigPath(path string) error {
 }
 
 func (c *Config) Validate() error {
-	if strings.TrimSpace(c.BridgeID) == "" {
+	if !boundedString(c.BridgeID, maxStringLength) {
 		return errors.New("bridge_id is required")
+	}
+	if len(c.HomeAssistantURL) > maxURLLength {
+		return errors.New("home_assistant_url is too long")
 	}
 	if c.HomeAssistantURL != "" {
 		u, err := url.Parse(c.HomeAssistantURL)
@@ -95,8 +115,14 @@ func (c *Config) Validate() error {
 	if c.KeychainService == "" {
 		c.KeychainService = "com.example.icloud-reminders-bridge"
 	}
+	if !boundedString(c.KeychainService, maxStringLength) {
+		return errors.New("keychain_service is too long")
+	}
 	if c.KeychainAccount == "" {
 		c.KeychainAccount = c.BridgeID
+	}
+	if !boundedString(c.KeychainAccount, maxStringLength) {
+		return errors.New("keychain_account is too long")
 	}
 	if c.PollInterval == "" {
 		c.PollInterval = "30s"
@@ -108,6 +134,9 @@ func (c *Config) Validate() error {
 	if c.CompletedRetention == "" {
 		c.CompletedRetention = "720h"
 	}
+	if len(c.PollInterval) > maxStringLength || len(c.CompletedRetention) > maxStringLength {
+		return errors.New("duration setting is too long")
+	}
 	retention, err := time.ParseDuration(c.CompletedRetention)
 	if err != nil || retention < 0 {
 		return errors.New("completed_retention must be a non-negative duration")
@@ -116,20 +145,26 @@ func (c *Config) Validate() error {
 		home, _ := os.UserHomeDir()
 		c.StatePath = filepath.Join(home, "Library", "Application Support", "icloud-reminders-bridge", "state.json")
 	}
+	if len(c.StatePath) > maxPathLength || len(c.EventKitHelper) > maxPathLength {
+		return errors.New("runtime path is too long")
+	}
+	if len(c.Lists) > maxLists {
+		return fmt.Errorf("at most %d reminder lists may be configured", maxLists)
+	}
 	seenIDs := make(map[string]struct{}, len(c.Lists))
 	calendarIDs := make(map[string]bool)
 	if len(c.Calendars) > 100 {
 		return errors.New("at most 100 calendars may be configured")
 	}
 	for _, calendar := range c.Calendars {
-		if strings.TrimSpace(calendar.ID) == "" || strings.TrimSpace(calendar.Name) == "" || calendarIDs[calendar.ID] {
+		if !boundedString(calendar.ID, maxStringLength) || !boundedString(calendar.Name, maxStringLength) || calendarIDs[calendar.ID] {
 			return errors.New("calendars require unique non-empty IDs and non-empty names")
 		}
 		calendarIDs[calendar.ID] = true
 	}
 	seenNames := make(map[string]string, len(c.Lists))
 	for _, list := range c.Lists {
-		if strings.TrimSpace(list.ID) == "" || strings.TrimSpace(list.Name) == "" {
+		if !boundedString(list.ID, maxStringLength) || !boundedString(list.Name, maxStringLength) {
 			return errors.New("each list requires id and name")
 		}
 		if _, exists := seenIDs[list.ID]; exists {
@@ -143,6 +178,10 @@ func (c *Config) Validate() error {
 		seenNames[folded] = list.ID
 	}
 	return nil
+}
+
+func boundedString(value string, limit int) bool {
+	return strings.TrimSpace(value) != "" && len(value) <= limit
 }
 
 // ValidateSync checks requirements that do not apply to discovery or local MCP.
