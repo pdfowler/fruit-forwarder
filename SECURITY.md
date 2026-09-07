@@ -23,6 +23,12 @@ stores it in its integration configuration. Protect HA backups and redact
 webhook URLs in reverse-proxy access logs. The `local_only` webhook setting is
 an additional network restriction, not a replacement for token secrecy.
 
+The bridge rejects runtime configuration and acknowledgement-state files that
+are symlinks, group/world-writable, or owned by another user. Their parent
+directories must also be private and user-owned. This prevents an accidental
+shared path from changing the allowlist or replay ledger; it is not protection
+against another process already running as the same macOS user.
+
 HA persists reminder snapshots and pending commands in its storage. Recent
 completed-item filtering changes the published snapshot; it does not delete
 Apple Reminders history or scrub existing HA backups and recorder history.

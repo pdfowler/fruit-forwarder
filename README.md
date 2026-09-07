@@ -103,6 +103,13 @@ The MCP registry metadata is intentionally rendered only after a versioned MCPB
 artifact has been built and hashed; see [packaging/mcp/README.md](packaging/mcp/README.md).
 No publishing command is implicit in a build or release check.
 
+The macOS tarball is self-installing: extract it, copy the exact IDs into the
+included configuration, and run `scripts/install-package-macos.sh`. The source
+checkout's `scripts/install-macos.sh` remains the developer build/install path.
+The packaged installer preserves the previous executable pair under the same
+rollback directory and uses the bundled LaunchAgent renderer; it does not
+overwrite an existing runtime configuration or Keychain item.
+
 ```sh
 go test -race ./...
 go vet ./...

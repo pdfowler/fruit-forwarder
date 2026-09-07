@@ -1,6 +1,7 @@
 package state
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -31,5 +32,29 @@ func TestStateBoundsAppliedLedger(t *testing.T) {
 	}
 	if len(state.AppliedCommandIDs) != maxAppliedCommands {
 		t.Fatalf("got %d ledger entries", len(state.AppliedCommandIDs))
+	}
+}
+
+func TestStateRejectsUntrustedFiles(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "state.json")
+	if err := (&State{AppliedCommandIDs: []string{"one"}}).Save(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(path, 0o620); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(path); err == nil {
+		t.Fatal("group-writable state accepted")
+	}
+	if err := os.Chmod(path, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "link.json")
+	if err := os.Symlink(path, link); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(link); err == nil {
+		t.Fatal("symlinked state accepted")
 	}
 }

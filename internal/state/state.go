@@ -36,6 +36,12 @@ type State struct {
 }
 
 func Load(path string) (*State, error) {
+	if err := validatePrivateDirectory(filepath.Dir(path)); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("state directory: %w", err)
+	}
+	if err := validateExistingPath(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("state file: %w", err)
+	}
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return &State{}, nil
@@ -70,8 +76,15 @@ func (s *State) MarkApplied(id string) {
 }
 
 func (s *State) Save(path string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	directory := filepath.Dir(path)
+	if err := os.MkdirAll(directory, 0o700); err != nil {
 		return fmt.Errorf("create state directory: %w", err)
+	}
+	if err := validatePrivateDirectory(directory); err != nil {
+		return fmt.Errorf("state directory: %w", err)
+	}
+	if err := validateExistingPath(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("state file: %w", err)
 	}
 	data, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
@@ -96,6 +109,37 @@ func (s *State) Save(path string) error {
 	}
 	if err := os.Rename(tmpName, path); err != nil {
 		return fmt.Errorf("replace state: %w", err)
+	}
+	return nil
+}
+
+func validateExistingPath(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return errors.New("must be a regular file; symlinks are not accepted")
+	}
+	if info.Mode().Perm()&0o022 != 0 {
+		return errors.New("must not be group- or world-writable")
+	}
+	if stat, ok := info.Sys().(*syscall.Stat_t); ok && stat.Uid != uint32(os.Getuid()) {
+		return errors.New("must be owned by the current user")
+	}
+	return nil
+}
+
+func validatePrivateDirectory(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() || info.Mode().Perm()&0o022 != 0 {
+		return errors.New("must be an owner-writable private directory")
+	}
+	if stat, ok := info.Sys().(*syscall.Stat_t); ok && stat.Uid != uint32(os.Getuid()) {
+		return errors.New("must be owned by the current user")
 	}
 	return nil
 }

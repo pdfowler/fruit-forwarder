@@ -15,6 +15,10 @@ bridge="$HOME/Library/Application Support/icloud-reminders-bridge/bin/icloud-rem
 "$bridge" discover
 ```
 
+For a published macOS tarball, extract it and run its bundled
+`scripts/install-package-macos.sh` instead. That installer uses the already
+built, checksummed pair and does not require Go or Xcode Command Line Tools.
+
 Allow Reminders access in System Settings → Privacy & Security → Reminders.
 Discovery prints list names and IDs, which may be private: do not paste the
 output into public issues. Copy the exact IDs and names into

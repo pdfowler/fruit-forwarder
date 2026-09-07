@@ -81,15 +81,10 @@ if [[ "${1:-}" == "--install-only" ]]; then
 fi
 "${BRIDGE_BIN}" check-config --config "${CONFIG_PATH}"
 
-sed \
-  -e "s|@@UID@@|${UID}|g" \
-  -e "s|@@HOME@@|${HOME}|g" \
-  -e "s|@@USER@@|${USER}|g" \
-  -e "s|@@TMPDIR@@|${TMPDIR}|g" \
-  -e "s|@@BINARY@@|${BRIDGE_BIN}|g" \
-  -e "s|@@CONFIG@@|${CONFIG_PATH}|g" \
-  -e "s|@@LOG_DIR@@|${LOG_DIR}|g" \
-  "${SERVICE_DIR}/deployment/${SERVICE_LABEL}.plist.tmpl" > "${PLIST_PATH}.new"
+python3 "${SERVICE_DIR}/scripts/render-launchagent.py" \
+  --uid "${UID}" --home "${HOME}" --user "${USER}" --tmpdir "${TMPDIR}" \
+  --binary "${BRIDGE_BIN}" --config "${CONFIG_PATH}" --log-dir "${LOG_DIR}" \
+  --output "${PLIST_PATH}.new"
 plutil -lint "${PLIST_PATH}.new" >/dev/null
 chmod 0600 "${PLIST_PATH}.new"
 mv "${PLIST_PATH}.new" "${PLIST_PATH}"

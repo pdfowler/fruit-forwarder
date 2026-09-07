@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -36,6 +37,9 @@ func DefaultPath() string {
 }
 
 func Load(path string) (*Config, error) {
+	if err := validateConfigPath(path); err != nil {
+		return nil, fmt.Errorf("config file: %w", err)
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
@@ -48,6 +52,34 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+func validateConfigPath(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return errors.New("must be a regular file; symlinks are not accepted")
+	}
+	if info.Mode().Perm()&0o022 != 0 {
+		return errors.New("must not be group- or world-writable")
+	}
+	if stat, ok := info.Sys().(*syscall.Stat_t); ok && stat.Uid != uint32(os.Getuid()) {
+		return errors.New("must be owned by the current user")
+	}
+	parent := filepath.Dir(path)
+	parentInfo, err := os.Lstat(parent)
+	if err != nil {
+		return fmt.Errorf("inspect parent directory: %w", err)
+	}
+	if !parentInfo.IsDir() || parentInfo.Mode().Perm()&0o022 != 0 {
+		return errors.New("parent directory must be a private directory")
+	}
+	if stat, ok := parentInfo.Sys().(*syscall.Stat_t); ok && stat.Uid != uint32(os.Getuid()) {
+		return errors.New("parent directory must be owned by the current user")
+	}
+	return nil
 }
 
 func (c *Config) Validate() error {
