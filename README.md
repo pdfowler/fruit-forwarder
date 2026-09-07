@@ -12,6 +12,7 @@ for Home Assistant and local MCP configuration.
 See the [compatibility matrix](docs/compatibility.md) for the current support
 claim and [architecture decisions](docs/adr/) for the monorepo and trust-boundary
 choices.
+Release history is tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## Security boundary
 

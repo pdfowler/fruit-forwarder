@@ -28,6 +28,7 @@ required = {
     root + "bin/icloud-reminders-eventkit",
     root + "config.example.json",
     root + "README.md",
+    root + "CHANGELOG.md",
     root + "LICENSE",
     root + "deployment/com.example.icloud-reminders-bridge.plist.tmpl",
     root + "scripts/install-package-macos.sh",

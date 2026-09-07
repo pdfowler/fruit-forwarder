@@ -39,6 +39,7 @@ cp "${repo_dir}/deployment/com.example.icloud-reminders-bridge.plist.tmpl" \
 cp "${repo_dir}/config.example.json" "${staging}/fruit-forwarder-macos-${version}/"
 cp "${repo_dir}/LICENSE" "${staging}/fruit-forwarder-macos-${version}/"
 cp "${repo_dir}/README.md" "${staging}/fruit-forwarder-macos-${version}/"
+cp "${repo_dir}/CHANGELOG.md" "${staging}/fruit-forwarder-macos-${version}/"
 cp "${repo_dir}/docs/setup.md" "${staging}/fruit-forwarder-macos-${version}/"
 cp "${repo_dir}/scripts/install-package-macos.sh" "${staging}/fruit-forwarder-macos-${version}/scripts/"
 cp "${repo_dir}/scripts/rollback-macos.sh" "${staging}/fruit-forwarder-macos-${version}/scripts/"
