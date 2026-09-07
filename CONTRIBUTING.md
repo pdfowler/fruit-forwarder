@@ -15,7 +15,8 @@ python3.13 -m venv .venv
 ```
 
 The pinned version is a reproducible test baseline, not a compatibility claim
-for every newer HA release. Webhook HTTP and full entity lifecycle tests remain
+for every newer HA release. Webhook HTTP boundaries and synthetic entity
+lifecycle cases are covered locally; a complete installed-HA lifecycle remains
 separate release work.
 
 Before opening a pull request on macOS, run:

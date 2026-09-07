@@ -35,7 +35,8 @@ Before a broadly recommended release:
   tests are implemented. Calendar failures no longer block reminder
   publication; HA retains the last confirmed calendar snapshot and exposes its
   last successful calendar sync timestamp. Real recurrence/all-day validation
-  and full lifecycle verification remain open. See docs/calendar-protocol.md.
+  and complete installed-HA lifecycle verification remain open. See
+  docs/calendar-protocol.md.
 - Keep mixed-version upgrades safe: protocol capability negotiation is now
   additive for version 1, and calendar-enabled clients fail closed when the HA
   peer does not advertise calendar support.
