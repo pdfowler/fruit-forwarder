@@ -26,7 +26,7 @@ jobs:
           scripts/export-hacs.sh "$RUNNER_TEMP/ha-fruit-forwarder"
           scripts/check-hacs-export.sh
           scripts/package-ha.sh "$(tr -d '[:space:]' < release/VERSION)"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ha-fruit-forwarder
           path: |
@@ -81,7 +81,7 @@ jobs:
           scripts/check-mcp-package.sh "$version"
       - name: Record release provenance and hashes
         run: python3 scripts/render-release-manifest.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: fruit-forwarder-macos-unsigned
           path: |

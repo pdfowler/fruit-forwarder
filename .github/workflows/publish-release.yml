@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: '3.13'
       - run: scripts/package-ha.sh "$(tr -d '[:space:]' < release/VERSION)"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-ha
           path: dist/ha
@@ -102,7 +102,7 @@ jobs:
             "$checksum"
           scripts/check-mcp-package.sh "$version"
       - run: python3 scripts/render-release-manifest.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-macos
           path: |
