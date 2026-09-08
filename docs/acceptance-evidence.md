@@ -185,6 +185,20 @@ background service health.
   replace installed macOS permission/lifecycle, live HA, independent MCP
   client, real-account semantic, or publication evidence.
 
+### Reminder semantics candidate refresh (2026-09-08 UTC)
+
+- The candidate adds a supported/unsupported reminder field matrix in
+  `docs/reminder-semantics.md`, including explicit preservation rules for
+  EventKit-owned fields and the configured completed-history bound.
+- MCP `reminders_update` now uses a locked read-merge-write path: omitted
+  description or due fields are preserved, while explicit empty strings clear
+  them. Synthetic tests cover both paths; Home Assistant's existing
+  full-item update queue remains unchanged.
+- `task release:prepare` passed from the clean candidate revision recorded in
+  `dist/release-manifest.json`. This is still synthetic/source evidence and
+  does not substitute for disposable real-account mutation or independent MCP
+  client acceptance.
+
 ## Installed acceptance record template
 
 Create one redacted record per run, for example under a maintainer-controlled
