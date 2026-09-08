@@ -35,7 +35,11 @@ Before running it:
 5. Confirm the GitHub repository namespace, release signing/notarization policy,
    HACS repository destination, and MCP Registry publisher namespace.
 6. Run the workflow only after the protected environment reviewer approves the
-   exact source revision and version.
+   exact source revision and version. The guarded public-release workflow also
+   fails closed unless the macOS job has a maintainer-selected repository or
+   organization `FRUIT_FORWARDER_SIGN_IDENTITY` Actions variable and the corresponding
+   Developer ID certificate is installed on the runner; the ordinary release
+   preparation workflow remains available for ad-hoc local candidates.
 
 After the GitHub release exists:
 

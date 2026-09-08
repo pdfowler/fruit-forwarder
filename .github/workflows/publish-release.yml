@@ -27,6 +27,12 @@ jobs:
 
   prepare-macos:
     runs-on: macos-latest
+    env:
+      # Release review must provide a Developer ID identity and install its
+      # certificate on the runner before this workflow is used.
+      # An empty value intentionally falls back to ad-hoc signing in local
+      # preparation, but the guarded publication path rejects that candidate.
+      FRUIT_FORWARDER_SIGN_IDENTITY: ${{ vars.FRUIT_FORWARDER_SIGN_IDENTITY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,6 +41,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Require a maintainer-selected Developer ID identity
+        run: |
+          test -n "${FRUIT_FORWARDER_SIGN_IDENTITY}"
+          test "${FRUIT_FORWARDER_SIGN_IDENTITY}" != "-"
       - run: scripts/package-macos.sh "$(tr -d '[:space:]' < release/VERSION)"
       - run: scripts/package-mcpb.sh "$(tr -d '[:space:]' < release/VERSION)"
       - name: Render and verify MCP Registry metadata
