@@ -217,7 +217,17 @@ live HA outage/recovery run against the installed custom component.
   busy, and post-release states; a busy lock is treated as expected while a
   bridge service is running.
 - This remains local diagnostics evidence. It does not replace a live
-  launchd/process lifecycle check on a signed macOS installation.
+launchd/process lifecycle check on a signed macOS installation.
+
+### Current Home Assistant compatibility lane (2026-09-08 UTC)
+
+- The Home Assistant runtime suite passes against HA `2026.9.1` on Python
+  `3.14.2`, matching the live Home Assistant version observed through the
+  approved HA-MCP control surface. The repository retains HA `2026.2.3` on
+  Python `3.13` as its reproducible baseline and CI now runs both lanes.
+- This validates the custom component's synthetic/runtime compatibility only;
+  the installed live entry is still the legacy source and remains a separate
+  cutover and lifecycle gate.
 
 ## Installed acceptance record template
 

@@ -6,7 +6,8 @@ artifacts.
 
 HA runtime tests use a real Home Assistant Python package with isolated mocked
 storage. They exercise queue recovery and persistence failure without talking
-to your HA server or Apple account. With Python 3.13:
+to your HA server or Apple account. The reproducible baseline lane uses Python
+3.13:
 
 ```sh
 python3.13 -m venv .venv
@@ -14,8 +15,9 @@ python3.13 -m venv .venv
 .venv/bin/python -m pytest -q
 ```
 
-The pinned version is a reproducible test baseline, not a compatibility claim
-for every newer HA release. Webhook HTTP boundaries and synthetic entity
+The pinned version is a reproducible baseline. The current compatibility lane
+is also pinned in `requirements-test-current.txt` and uses Python 3.14.2 or
+newer; CI runs both lanes. Webhook HTTP boundaries and synthetic entity
 lifecycle cases are covered locally; a complete installed-HA lifecycle remains
 separate release work.
 

@@ -25,13 +25,25 @@ jobs:
           GITLEAKS_ENABLE_COMMENTS: 'false'
   homeassistant:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: baseline
+            python-version: '3.13'
+            requirements: requirements-test.txt
+          - lane: current
+            python-version: '3.14'
+            requirements: requirements-test-current.txt
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
           cache: pip
-      - run: pip install -r requirements-test.txt
+          cache-dependency-path: ${{ matrix.requirements }}
+      - name: Install Home Assistant test lane
+        run: pip install -r ${{ matrix.requirements }}
       - run: python -m pytest -q
       - name: Validate HACS distribution
         run: |

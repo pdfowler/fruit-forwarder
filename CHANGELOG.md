@@ -36,6 +36,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   without a successful capability snapshot, while exposing snapshot age.
 - Add a read-only status/doctor probe for the bridge synchronization lock,
   distinguishing an available lock from a normally busy running service.
+- Add a current Home Assistant `2026.9.1`/Python `3.14.2` compatibility lane
+  alongside the reproducible HA `2026.2.3`/Python `3.13` baseline.
 - Add guarded `task publish:release`, `task publish:hacs`, and `task publish:mcp`
   wrappers with exact-tag and attribution preflight.
 - Preserve signed macOS toolchain metadata when the final release job merges
