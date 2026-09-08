@@ -13,6 +13,7 @@ See the [compatibility matrix](docs/compatibility.md) for the current support
 claim and [architecture decisions](docs/adr/) for the monorepo and trust-boundary
 choices.
 For issue-reporting boundaries and redaction guidance, see [SUPPORT.md](SUPPORT.md).
+The detailed threat model and security limitations are in [SECURITY.md](SECURITY.md).
 Third-party attribution is recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 Release history is tracked in [CHANGELOG.md](CHANGELOG.md).
 The release gate is tracked in [docs/acceptance-evidence.md](docs/acceptance-evidence.md).
