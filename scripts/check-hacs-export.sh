@@ -10,4 +10,5 @@ second="${tmp_dir}/fruit-forwarder-hacs-second"
 "${repo_dir}/scripts/export-hacs.sh" "$first" >/dev/null
 "${repo_dir}/scripts/export-hacs.sh" "$second" >/dev/null
 diff -ru "$first" "$second"
+"${repo_dir}/scripts/check-hacs-target.sh" "$first" >/dev/null
 echo "validated deterministic HACS export"

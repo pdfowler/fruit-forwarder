@@ -33,17 +33,34 @@ if [[ -n "$(git -C "${repo_dir}" status --porcelain)" ]]; then
   source_dirty=true
 fi
 python3 - "${out_dir}" "${source_revision}" "${source_dirty}" <<'PY'
+import hashlib
 import json
 import pathlib
 import sys
 
 root = pathlib.Path(sys.argv[1])
+
+
+def tree_digest() -> str:
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.name == "fruit-forwarder-source.json":
+            continue
+        relative = path.relative_to(root).as_posix().encode()
+        digest.update(relative)
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 metadata = {
     "product": "Fruit Forwarder",
     "source_repository": "https://github.com/pdfowler/fruit-forwarder",
     "source_revision": sys.argv[2],
     "source_dirty": sys.argv[3] == "true",
 }
+metadata["export_tree_sha256"] = tree_digest()
 (root / "fruit-forwarder-source.json").write_text(json.dumps(metadata, indent=2) + "\n")
 PY
 

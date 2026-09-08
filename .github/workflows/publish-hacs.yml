@@ -52,6 +52,15 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Reject an untracked or modified generated tree
+        run: |
+          if [[ -f hacs-repository/fruit-forwarder-source.json ]]; then
+            scripts/check-hacs-target.sh --require-clean hacs-repository
+          elif find hacs-repository -type f ! -path 'hacs-repository/.git/*' -print -quit | grep -q .; then
+            echo "HACS destination is not an empty or previously generated repository" >&2
+            exit 1
+          fi
+
       - name: Replace the generated tree and commit the source revision
         env:
           HACS_REPOSITORY: ${{ inputs.hacs_repository }}

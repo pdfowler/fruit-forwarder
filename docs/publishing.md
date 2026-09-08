@@ -43,8 +43,11 @@ After the GitHub release exists:
   tag after creating the protected `hacs-release` environment and
   `HACS_REPO_TOKEN` secret. Type `PUBLISH_HACS` and provide the destination
   repository explicitly. The workflow replaces the destination only with the
-  deterministic export and records the exact Fruit Forwarder source revision;
-  it does not publish from a branch or a dirty checkout.
+  deterministic export and records the exact Fruit Forwarder source revision.
+  Before replacement it verifies the destination's recorded export-tree digest
+  (or requires an empty repository), so a modified or unrelated tree fails
+  closed instead of being silently overwritten. It does not publish from a
+  branch or a dirty checkout.
 - Submit the HACS repository first as a custom repository, then request default
   catalog inclusion once the required release and validation checks are live.
 - Run the guarded `Publish MCP Registry metadata` workflow from the matching
