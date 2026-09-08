@@ -250,6 +250,21 @@ launchd/process lifecycle check on a signed macOS installation.
   calendar permission, real mutations, independent MCP-client acceptance, or
   service cutover.
 
+### Ecosystem publication gate refresh (2026-09-08 UTC)
+
+- Current HACS requirements were reviewed against the generated distribution:
+  it contains exactly one integration under `custom_components/`, required
+  manifest fields, both brand locations, and HACS/Hassfest workflow files.
+  The export validator now fails if a second integration directory appears.
+- Current MCP Registry MCPB requirements were reviewed against `dist/mcp/server.json`:
+  the metadata uses the `io.github.pdfowler/fruit-forwarder` namespace, an
+  exact versioned GitHub release URL containing `mcp`, `registryType: "mcpb"`,
+  `stdio` transport, and the candidate artifact SHA-256. The package validator
+  now checks each of these fields before release preparation succeeds.
+- The MCP Registry remains a preview service, so namespace and package rules
+  must be rechecked immediately before the first authorized publication. No
+  public repository, release, HACS listing, or Registry entry exists yet.
+
 ## Installed acceptance record template
 
 Create one redacted record per run, for example under a maintainer-controlled
