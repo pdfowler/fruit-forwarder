@@ -49,10 +49,10 @@ be paired with the installed acceptance records below.
 ### Canonical repository candidate rebuild (2026-09-07)
 
 - `task check` and `task release:prepare` passed from the clean source revision
-  `8f94f72c1ebfab2b6d850f4d0f5c7f924cffb08f` after the Go module path was
-  aligned with the planned public `github.com/pdfowler/fruit-forwarder`
-  repository, the Home Assistant config-flow scope bounds were hardened, and
-  the guarded publication task surface was added.
+  recorded in `dist/release-manifest.json` after the Go module path was aligned
+  with the planned public `github.com/pdfowler/fruit-forwarder` repository, the
+  Home Assistant config-flow scope bounds were hardened, and the guarded
+  publication task surface was added.
 - The manifest records `source_dirty: false` and eight verified outputs: the
   HACS export and archive, macOS archive, MCPB and checksum sidecars, MCP
   Registry metadata, and the unified release manifest.
@@ -62,12 +62,14 @@ be paired with the installed acceptance records below.
   macOS permission/lifecycle, live HA, independent MCP-client, or publication
   evidence below.
 
-The current macOS package was also installed twice under an isolated temporary
-`HOME` with `INSTALL_ONLY=true`, then rolled back from the generated backup.
-Both executable switches succeeded, rollback restored the pair, the example
-configuration remained present, and no LaunchAgent was activated. This proves
-the packaged transaction boundary only; it does not prove EventKit permission,
-background service, upgrade schema, or reboot behavior on the real account.
+The macOS package from revision
+`a768e1ec3b61934062ee6bf2a4d33d1e2360709f` was installed twice under an
+isolated temporary `HOME` with `INSTALL_ONLY=true`, then rolled back from the
+generated backup. Both executable switches succeeded, rollback restored the
+pair, the example configuration remained present, and no LaunchAgent was
+activated. This proves the packaged transaction boundary only; it does not
+prove EventKit permission, background service, upgrade schema, or reboot
+behavior on the real account.
 
 ### Earlier packaged transaction evidence (revision `4d9742f`)
 
