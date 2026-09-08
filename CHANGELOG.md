@@ -6,6 +6,18 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
 
 ## Unreleased
 
+- Add standard Home Assistant dashboard examples for scoped todo lists and
+  read-only calendars.
+- Add a threat model covering EventKit permissions, HA bearer tokens, local
+  process trust, untrusted reminder content, bounded payloads, and publication
+  workflows.
+- Add an explicit MCP client compatibility matrix separating generic stdio,
+  MCPB package, named-client, and unsupported network claims.
+- Add guarded `task publish:release`, `task publish:hacs`, and `task publish:mcp`
+  wrappers with exact-tag and attribution preflight.
+- Preserve signed macOS toolchain metadata when the final release job merges
+  artifacts from separate HA and macOS preparation jobs.
+- Harden macOS uninstall and Home Assistant configuration-flow bounds.
 - Add a shared `task build:macos` target and route the macOS and MCPB packages
   through the same staged native build and boundary-test path.
 - Have macOS CI invoke the shared Task targets instead of maintaining a second
