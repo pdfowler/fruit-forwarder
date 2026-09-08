@@ -18,6 +18,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   Reminders/Calendar permission state during migration and recovery.
 - Clean up the local HA webhook when config-entry platform setup fails, making
   reload retries safe after transient setup errors.
+- Reject Home Assistant mutation commands outside the configured list allowlist
+  before journaling them as uncertain EventKit operations.
 - Add guarded `task publish:release`, `task publish:hacs`, and `task publish:mcp`
   wrappers with exact-tag and attribution preflight.
 - Preserve signed macOS toolchain metadata when the final release job merges

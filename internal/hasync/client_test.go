@@ -142,6 +142,7 @@ func TestQueueEpochFencesRestoredHomeAssistantQueue(t *testing.T) {
 	cfg := &config.Config{
 		BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s",
 		StatePath: filepath.Join(t.TempDir(), "state.json"),
+		Lists:     []config.List{{ID: "list", Name: "Tasks"}},
 	}
 	store := &fakeReminderStore{}
 	bridgeState := &state.State{}
@@ -284,6 +285,7 @@ func TestSyncOnceUsesScopedWebhookAndAcknowledgesCommands(t *testing.T) {
 	cfg := &config.Config{
 		BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s",
 		StatePath: filepath.Join(t.TempDir(), "state.json"),
+		Lists:     []config.List{{ID: "list-1", Name: "Tasks"}},
 	}
 	store := &fakeReminderStore{items: []model.List{{ID: "list-1", Name: "Example List"}}}
 	bridgeState := &state.State{}
@@ -333,7 +335,7 @@ func TestSyncOnceStopsOnUncertainCommandOutcome(t *testing.T) {
 		})
 	}))
 	defer server.Close()
-	cfg := &config.Config{BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s", StatePath: filepath.Join(t.TempDir(), "state.json")}
+	cfg := &config.Config{BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s", StatePath: filepath.Join(t.TempDir(), "state.json"), Lists: []config.List{{ID: "list", Name: "Tasks"}}}
 	store := &failingApplyStore{}
 	client := New(cfg, "token", store, &state.State{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	client.httpClient = server.Client()
@@ -371,12 +373,38 @@ func TestPostSnapshotRejectsUnboundedOrUnsupportedCommands(t *testing.T) {
 				_ = json.NewEncoder(w).Encode(model.SyncResponse{Version: model.ProtocolVersion, Commands: []model.Command{command}})
 			}))
 			defer server.Close()
-			cfg := &config.Config{BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s"}
+			cfg := &config.Config{BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s", Lists: []config.List{{ID: "list", Name: "Tasks"}}}
 			client := New(cfg, "token", &fakeReminderStore{}, &state.State{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 			client.httpClient = server.Client()
 			if _, err := client.SyncOnce(context.Background()); err == nil {
 				t.Fatal("accepted invalid command")
 			}
 		})
+	}
+}
+
+func TestSyncOnceRejectsOutOfScopeCommandBeforePersisting(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(model.SyncResponse{
+			Version:  model.ProtocolVersion,
+			Commands: []model.Command{{ID: "outside", Action: "complete", ListID: "private", Item: model.Item{UID: "item"}}},
+		})
+	}))
+	defer server.Close()
+
+	statePath := filepath.Join(t.TempDir(), "state.json")
+	cfg := &config.Config{
+		BridgeID: "mac", HomeAssistantURL: server.URL, PollInterval: "30s", StatePath: statePath,
+		Lists: []config.List{{ID: "allowed", Name: "Tasks"}},
+	}
+	store := &fakeReminderStore{}
+	bridgeState := &state.State{}
+	client := New(cfg, "token", store, bridgeState, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	client.httpClient = server.Client()
+	if _, err := client.SyncOnce(context.Background()); err == nil || !strings.Contains(err.Error(), "outside the configured allowlist") {
+		t.Fatalf("out-of-scope command was accepted: %v", err)
+	}
+	if bridgeState.InFlight != nil || len(store.commands) != 0 {
+		t.Fatalf("out-of-scope command crossed the journal boundary: state=%#v commands=%d", bridgeState.InFlight, len(store.commands))
 	}
 }

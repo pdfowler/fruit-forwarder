@@ -265,6 +265,9 @@ func (c *Client) postSnapshot(ctx context.Context, lists []model.List) (*model.S
 		if c.state.Has(command.ID) {
 			continue
 		}
+		if _, allowed := c.cfg.AllowedIDs()[command.ListID]; !allowed {
+			return nil, fmt.Errorf("Home Assistant command targets list %q outside the configured allowlist", command.ListID)
+		}
 		if err := validateCommand(command); err != nil {
 			return nil, fmt.Errorf("invalid Home Assistant command: %w", err)
 		}
