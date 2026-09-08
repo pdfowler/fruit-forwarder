@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/pdfowler/fruit-forwarder/security/advisories/new
+    about: Report credentials, authorization, or private-data issues privately.
+  - name: Setup and support guidance
+    url: https://github.com/pdfowler/fruit-forwarder/blob/main/SUPPORT.md
+    about: Review compatibility, diagnostics, and redaction guidance first.

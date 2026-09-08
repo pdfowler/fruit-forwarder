@@ -30,6 +30,7 @@ required = {
     root + "README.md",
     root + "CHANGELOG.md",
     root + "SUPPORT.md",
+    root + "THIRD_PARTY_NOTICES.md",
     root + "LICENSE",
     root + "deployment/com.pdfowler.fruitforwarder.plist.tmpl",
     root + "scripts/install-package-macos.sh",
