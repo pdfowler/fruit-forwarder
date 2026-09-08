@@ -27,8 +27,13 @@ def test_render_launchagent_preserves_special_paths(tmp_path: Path) -> None:
     with output.open("rb") as stream:
         plist = plistlib.load(stream)
     assert plist["Label"] == "com.pdfowler.fruitforwarder"
-    assert plist["ProgramArguments"][:2] == [values["--binary"], "serve"]
-    assert "/bin/launchctl" not in plist["ProgramArguments"]
+    assert plist["ProgramArguments"][:4] == [
+        "/bin/launchctl",
+        "asuser",
+        values["--uid"],
+        values["--binary"],
+    ]
+    assert plist["ProgramArguments"][4] == "serve"
     assert plist["EnvironmentVariables"]["HOME"] == "/Users/Pat & Co"
     assert plist["ProgramArguments"][-1] == values["--config"]
     assert plist["StandardOutPath"] == values["--log-dir"] + "/icloud-reminders-bridge.log"

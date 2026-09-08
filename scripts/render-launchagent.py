@@ -10,9 +10,9 @@ import plistlib
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    # Kept as a compatibility input for existing installer invocations. A
-    # LaunchAgent is already bootstrapped in gui/<uid>, so no asuser wrapper is
-    # needed and it can obscure the responsible process for TCC diagnostics.
+    # Keep the UID as an explicit launchctl input.  EventKit's TCC checks are
+    # tied to the logged-in user session; invoking the bridge through
+    # launchctl asuser preserves the same behavior as an interactive run.
     parser.add_argument("--uid", required=False, default="")
     parser.add_argument("--home", required=True)
     parser.add_argument("--user", required=True)
@@ -27,6 +27,9 @@ def main() -> None:
     plist = {
         "Label": label,
         "ProgramArguments": [
+            "/bin/launchctl",
+            "asuser",
+            args.uid,
             args.binary,
             "serve",
             "--config",

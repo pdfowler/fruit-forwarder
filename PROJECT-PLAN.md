@@ -224,7 +224,7 @@ Tooling references: [Task guide](https://taskfile.dev/docs/guide), [Task schema]
 
 1. Reproduce the recorded background EventKit timeout on a controlled installation. Compare Terminal, MCP-client, LaunchAgent and app launches with identical helper versions and account state.
 2. Capture responsible process, code-signing identity, authorization status, helper lifetime and launch environment without exposing reminder contents.
-3. The new per-user LaunchAgent invokes the bridge directly in its `gui/<uid>` domain; the unverified `launchctl asuser` wrapper is no longer part of the Fruit Forwarder architecture. Validate the direct arrangement under fresh permissions and lifecycle conditions before claiming background support; keep legacy migration separate.
+3. The new per-user LaunchAgent invokes the bridge through `launchctl asuser <uid>` in its `gui/<uid>` domain. Live Dean testing showed the direct arrangement can time out in EventKit while the same binary succeeds interactively and through `asuser`; retain this wrapper until fresh-permission and lifecycle testing proves it unnecessary. Keep legacy migration separate.
 4. Evaluate a persistent native service versus short-lived helper invocations. Base the choice on TCC stability, request cancellation, synchronization cost, memory and serialization—not aesthetics.
 5. Use the chosen stable maintainer identity `com.pdfowler.fruitforwarder` (and
    `com.pdfowler.fruitforwarder.eventkit` for the helper). Align the Go

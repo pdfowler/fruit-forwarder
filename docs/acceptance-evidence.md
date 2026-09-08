@@ -250,6 +250,29 @@ launchd/process lifecycle check on a signed macOS installation.
   calendar permission, real mutations, independent MCP-client acceptance, or
   service cutover.
 
+### Live HA installation and Fruit Forwarder cutover (2026-09-08 UTC)
+
+- The HACS-exported `icloud_reminders_bridge` component from source revision
+  `d3fdb47cf5e52eef93e503211429a57ec7f37a55` was copied to the live HA
+  appliance over its approved SSH path. The prior component is preserved at
+  `/config/.fruit-forwarder-backups/icloud_reminders_bridge.pre-fruit-forwarder-20260908T063206Z`;
+  no reminder data or HA storage was modified.
+- After the initial restart exposed HA's package-directory scanning of a dotted
+  backup name, the backup was moved outside `custom_components` and HA was
+  restarted again. The integration then loaded cleanly with
+  `supports_reconfigure: true`; the existing entry ID and entity ID were
+  preserved.
+- Candidate foreground sync succeeded with zero commands applied. The live
+  entity reported `sync_status: confirmed`, `pending_commands: 0`, and source
+  `iCloud`; its needs-action view contained one existing item. No todo item was
+  completed, created, renamed, or removed as part of this verification.
+- The candidate macOS artifact was then activated. `com.pdfowler.fruitforwarder`
+  is running under `gui/501`; the legacy service labels are absent. The direct
+  LaunchAgent arrangement timed out in EventKit, while an equivalent interactive
+  and `launchctl asuser` run succeeded. The renderer is therefore being updated
+  to retain the `asuser` wrapper for TCC-safe background operation; background
+  health remains open until the rebuilt artifact is installed and observed.
+
 ### Ecosystem publication gate refresh (2026-09-08 UTC)
 
 - Current HACS requirements were reviewed against the generated distribution:
