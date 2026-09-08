@@ -14,3 +14,7 @@ background launch. Update this table only with recorded acceptance evidence.
 Supported scope is scoped Apple Reminders read/create/update/complete/reopen and
 read-only EventKit calendars. Network MCP, Calendar writes, reminder deletion,
 list management, Find My, and other iCloud services are not supported claims.
+
+See the [MCP client compatibility matrix](mcp-client-compatibility.md) for the
+distinction between generic stdio evidence, MCPB packaging evidence, and named
+client acceptance.

@@ -45,3 +45,8 @@ The repository now prepares and validates the MCPB artifact and registry
 metadata. Registry publication and the GitHub release remain deliberately
 gated until the public namespace, signed artifact policy and real-client
 acceptance evidence are approved.
+
+The current client support boundary is recorded in
+[docs/mcp-client-compatibility.md](../../docs/mcp-client-compatibility.md);
+do not turn MCPB schema validation into a claim that a particular desktop host
+has passed an installed permission and data-flow test.
