@@ -157,10 +157,10 @@ class BridgeRuntime:
             if (
                 sent_at is not None
                 and self.last_snapshot_sent_at is not None
-                and sent_at < self.last_snapshot_sent_at
+                and sent_at <= self.last_snapshot_sent_at
             ):
                 raise ProtocolError(
-                    "Snapshot sent_at is older than the last accepted snapshot"
+                    "Snapshot sent_at is not newer than the last accepted snapshot"
                 )
             if sent_at is not None:
                 self.last_snapshot_sent_at = sent_at

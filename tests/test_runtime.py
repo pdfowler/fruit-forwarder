@@ -92,8 +92,14 @@ async def test_snapshot_timestamp_rejects_replays_and_downgrades(tmp_path):
 
     stale = snapshot()
     stale["sent_at"] = (now - timedelta(seconds=1)).isoformat()
-    with pytest.raises(ProtocolError, match="older than"):
+    with pytest.raises(ProtocolError, match="not newer"):
         await bridge.async_process_snapshot(stale)
+    assert bridge.lists == previous
+
+    duplicate = snapshot()
+    duplicate["sent_at"] = now.isoformat()
+    with pytest.raises(ProtocolError, match="not newer"):
+        await bridge.async_process_snapshot(duplicate)
     assert bridge.lists == previous
 
     with pytest.raises(ProtocolError, match="missing sent_at"):
