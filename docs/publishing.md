@@ -113,3 +113,31 @@ release.
 
 If one target fails, leave the release partial and record the per-target status;
 do not rebuild a different artifact under an already published version.
+
+## Current ecosystem gate review (2026-09-08)
+
+The upstream requirements were rechecked before treating the candidate
+publication workflow as ready:
+
+- HACS integration repositories must contain one integration under
+  `custom_components/<domain>/` with the required manifest fields. Home
+  Assistant Brands is required for integration UI conformance. Default-catalog
+  inclusion additionally requires a public GitHub repository, passing HACS and
+  Hassfest actions, and a full GitHub release. HACS may use the default branch
+  when a repository has no releases, but this project will publish releases so
+  users can select and upgrade known versions.
+- The MCP Registry currently accepts `registryType: "mcpb"` entries that point
+  at MCPB assets hosted in GitHub or GitLab releases. The package URL must
+  contain `mcp`, and metadata must include the artifact `fileSha256`. GitHub
+  authentication uses an `io.github.<owner>/...` server namespace; the guarded
+  workflow uses GitHub OIDC after downloading and verifying the immutable
+  release asset.
+- The MCP Registry remains in preview, so the release review must recheck its
+  schema, supported package types, and publisher workflow immediately before
+  the first publication.
+
+References: [HACS integration requirements](https://hacs.xyz/docs/publish/integration/),
+[HACS default repositories](https://hacs.xyz/docs/publish/include/),
+[MCP Registry package types](https://modelcontextprotocol.io/registry/package-types),
+[MCP Registry authentication](https://modelcontextprotocol.io/registry/authentication),
+and [MCP Registry GitHub Actions](https://modelcontextprotocol.io/registry/github-actions).
