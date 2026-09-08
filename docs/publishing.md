@@ -149,6 +149,8 @@ ad-hoc-tested candidate:
 
 - Source release: <https://github.com/pdfowler/fruit-forwarder/releases/tag/v0.1.0>
 - Home Assistant distribution: <https://github.com/pdfowler/ha-fruit-forwarder/releases/tag/v0.1.0>
+- HACS default-catalog PR: <https://github.com/hacs/default/pull/10771> (open;
+  awaiting the maintainer-controlled `New default repository` label)
 - MCP Registry: `io.github.pdfowler/fruit-forwarder` version `0.1.0`, active/latest
 - MCP publication workflow: GitHub Actions run `34249548695`
 
