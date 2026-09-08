@@ -55,7 +55,9 @@ After the GitHub release exists:
 - Submit the HACS repository first as a custom repository, then request default
   catalog inclusion only after the public repository has its description,
   topics, enabled issues, a full release, passing HACS and Hassfest actions,
-  and the matching Home Assistant Brands entry/PR.
+  and the current Home Assistant brand-policy checks. The component-local brand
+  asset is already included; submit an external Brands change only if the
+  target HACS/HA release policy still requires it.
 - Run the guarded `Publish MCP Registry metadata` workflow from the matching
   version tag after configuring the protected `mcp-release` environment. Type
   `PUBLISH_MCP`, and provide the exact official `mcp-publisher` Linux amd64
