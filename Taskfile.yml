@@ -139,3 +139,57 @@ tasks:
         mkdir -p dist
         python3 scripts/render-release-manifest.py
       - scripts/check-release-manifest.py
+
+  publish:release:
+    desc: Dispatch the protected GitHub release workflow for an exact tag
+    requires:
+      vars: [TAG, CONFIRM]
+    env:
+      FRUIT_FORWARDER_RELEASE_TAG: "{{.TAG}}"
+      FRUIT_FORWARDER_RELEASE_CONFIRM: "{{.CONFIRM}}"
+    cmds:
+      - scripts/check-publish-ref.sh
+      - |
+        test "${FRUIT_FORWARDER_RELEASE_CONFIRM}" = "PUBLISH"
+        gh workflow run publish-release.yml \
+          --ref "${FRUIT_FORWARDER_RELEASE_TAG}" \
+          --field confirm=PUBLISH
+
+  publish:hacs:
+    desc: Dispatch the protected HACS distribution workflow for an exact tag
+    requires:
+      vars: [TAG, CONFIRM, HACS_REPOSITORY]
+    env:
+      FRUIT_FORWARDER_RELEASE_TAG: "{{.TAG}}"
+      FRUIT_FORWARDER_RELEASE_CONFIRM: "{{.CONFIRM}}"
+      FRUIT_FORWARDER_HACS_REPOSITORY: "{{.HACS_REPOSITORY}}"
+    cmds:
+      - scripts/check-publish-ref.sh
+      - |
+        test "${FRUIT_FORWARDER_RELEASE_CONFIRM}" = "PUBLISH_HACS"
+        [[ "${FRUIT_FORWARDER_HACS_REPOSITORY}" =~ ^[A-Za-z0-9_.-]+/ha-fruit-forwarder$ ]]
+        gh workflow run publish-hacs.yml \
+          --ref "${FRUIT_FORWARDER_RELEASE_TAG}" \
+          --field confirm=PUBLISH_HACS \
+          --field hacs_repository="${FRUIT_FORWARDER_HACS_REPOSITORY}"
+
+  publish:mcp:
+    desc: Dispatch the protected MCP Registry workflow for an exact tag
+    requires:
+      vars: [TAG, CONFIRM, PUBLISHER_URL, PUBLISHER_SHA256]
+    env:
+      FRUIT_FORWARDER_RELEASE_TAG: "{{.TAG}}"
+      FRUIT_FORWARDER_RELEASE_CONFIRM: "{{.CONFIRM}}"
+      FRUIT_FORWARDER_MCP_PUBLISHER_URL: "{{.PUBLISHER_URL}}"
+      FRUIT_FORWARDER_MCP_PUBLISHER_SHA256: "{{.PUBLISHER_SHA256}}"
+    cmds:
+      - scripts/check-publish-ref.sh
+      - |
+        test "${FRUIT_FORWARDER_RELEASE_CONFIRM}" = "PUBLISH_MCP"
+        [[ "${FRUIT_FORWARDER_MCP_PUBLISHER_URL}" == https://github.com/modelcontextprotocol/registry/releases/download/*/mcp-publisher_linux_amd64.tar.gz ]]
+        [[ "${FRUIT_FORWARDER_MCP_PUBLISHER_SHA256}" =~ ^[a-f0-9]{64}$ ]]
+        gh workflow run publish-mcp.yml \
+          --ref "${FRUIT_FORWARDER_RELEASE_TAG}" \
+          --field confirm=PUBLISH_MCP \
+          --field publisher_url="${FRUIT_FORWARDER_MCP_PUBLISHER_URL}" \
+          --field publisher_sha256="${FRUIT_FORWARDER_MCP_PUBLISHER_SHA256}"

@@ -47,6 +47,22 @@ Before running it:
    protected certificate/keychain secrets described above. The ordinary release
    preparation workflow remains available for ad-hoc local candidates.
 
+The same guarded workflows can be dispatched from a clean, checked-out tag
+through the Task wrappers (which still require `gh` authentication and the
+protected GitHub environments):
+
+```sh
+task publish:release TAG=v0.1.0 CONFIRM=PUBLISH
+task publish:hacs TAG=v0.1.0 CONFIRM=PUBLISH_HACS HACS_REPOSITORY=pdfowler/ha-fruit-forwarder
+task publish:mcp TAG=v0.1.0 CONFIRM=PUBLISH_MCP \
+  PUBLISHER_URL=https://github.com/modelcontextprotocol/registry/releases/download/VERSION/mcp-publisher_linux_amd64.tar.gz \
+  PUBLISHER_SHA256=REPLACE_WITH_REVIEWED_SHA256
+```
+
+Each wrapper rejects a dirty checkout, a missing tag, a tag that does not point
+at `HEAD`, an incorrect confirmation string, or malformed publication inputs;
+the wrappers do not hold or transmit release credentials.
+
 After the GitHub release exists:
 
 - Run the guarded `Publish HACS distribution` workflow from the matching version
