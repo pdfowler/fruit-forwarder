@@ -74,6 +74,7 @@ tasks:
       - python3 -m json.tool packaging/mcp/server.json.in >/dev/null
       - python3 -m json.tool packaging/mcp/manifest.json.in >/dev/null
       - python3 -m json.tool packaging/mcp/config.example.json >/dev/null
+      - test -f "release/notes/$(cat release/VERSION).md"
       - python3 -c 'import ast; ast.parse(open("scripts/render-release-manifest.py").read())'
       - python3 -c 'import ast; ast.parse(open("scripts/render-launchagent.py").read())'
       - python3 -c 'import ast; ast.parse(open("scripts/package-hacs.py").read())'

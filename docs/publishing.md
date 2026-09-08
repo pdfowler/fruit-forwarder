@@ -13,8 +13,8 @@ Before running it:
    publication workflows repeat it on the tagged checkout.
 2. Create the matching annotated version tag (`v<release/VERSION>`) and run the
    workflow from that tag; the workflow refuses branch-based publication.
-3. Run `task release:prepare` on macOS and inspect the release manifest,
-   checksums, HACS archive, macOS tarball, and MCPB contents. The HA and macOS
+3. Run `task release:prepare` on macOS and inspect the versioned release notes,
+   release manifest, checksums, HACS archive, macOS tarball, and MCPB contents. The HA and macOS
    package scripts also re-open their finished archives and verify their
    versioned roots, required files, checksums, and absence of unexpected links
    or interpreter caches. The macOS archive is assembled with normalized

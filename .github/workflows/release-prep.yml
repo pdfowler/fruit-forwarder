@@ -19,6 +19,8 @@ jobs:
           python-version: '3.13'
       - name: Validate metadata and deterministic HACS export
         run: |
+          version="$(tr -d '[:space:]' < release/VERSION)"
+          test -f "release/notes/${version}.md"
           python3 -m json.tool release/compatibility.json >/dev/null
           python3 -m json.tool packaging/mcp/server.json.in >/dev/null
           scripts/export-hacs.sh "$RUNNER_TEMP/ha-fruit-forwarder"

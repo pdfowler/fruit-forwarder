@@ -38,6 +38,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   distinguishing an available lock from a normally busy running service.
 - Add a current Home Assistant `2026.9.1`/Python `3.14.2` compatibility lane
   alongside the reproducible HA `2026.2.3`/Python `3.13` baseline.
+- Add checked-in versioned 0.1.0 release notes and require them in release
+  preparation and protected GitHub publication.
 - Add guarded `task publish:release`, `task publish:hacs`, and `task publish:mcp`
   wrappers with exact-tag and attribution preflight.
 - Preserve signed macOS toolchain metadata when the final release job merges

@@ -133,8 +133,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="$(python3 -c 'import json; print(json.load(open("dist/release-manifest.json"))["version"])')"
+          notes_file="release/notes/${version}.md"
+          test -f "${notes_file}"
           mapfile -t assets < <(find dist -type f ! -name 'release-manifest.json' -print | sort)
           gh release create "v${version}" "${assets[@]}" \
             --verify-tag \
             --title "Fruit Forwarder ${version}" \
-            --generate-notes
+            --notes-file "${notes_file}"
