@@ -26,6 +26,7 @@
       "invalid_token": "The pairing token is not a valid 256-bit bridge token.",
       "invalid_name": "Enter a name for this bridge.",
       "invalid_bridge_id": "Enter the stable bridge identifier from the Mac configuration.",
+      "invalid_scope": "Use at most 100 exact IDs per scope, with no ID longer than 4096 characters.",
       "already_configured": "A bridge with this identifier is already configured.",
       "no_lists": "Enter at least one exact EventKit reminder list or calendar ID."
     },

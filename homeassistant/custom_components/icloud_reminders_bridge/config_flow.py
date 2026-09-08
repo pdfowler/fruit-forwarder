@@ -12,7 +12,15 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers import selector
 
-from .const import CONF_ALLOWED_CALENDAR_IDS, CONF_ALLOWED_LIST_IDS, CONF_BRIDGE_ID, CONF_PAIRING_TOKEN, DOMAIN
+from .const import (
+    CONF_ALLOWED_CALENDAR_IDS,
+    CONF_ALLOWED_LIST_IDS,
+    CONF_BRIDGE_ID,
+    CONF_PAIRING_TOKEN,
+    DOMAIN,
+    MAX_LISTS,
+    MAX_STRING_LENGTH,
+)
 
 TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{43,128}$")
 
@@ -29,10 +37,16 @@ class ICloudRemindersBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         entry = self._get_reconfigure_entry()
         errors: dict[str, str] = {}
         if user_input is not None:
-            lists = _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_LIST_IDS, ""))
-            calendars = _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_CALENDAR_IDS, ""))
+            try:
+                lists = _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_LIST_IDS, ""))
+                calendars = _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_CALENDAR_IDS, ""))
+            except ValueError:
+                lists, calendars = [], []
+                errors["base"] = "invalid_scope"
             token = user_input.get(CONF_PAIRING_TOKEN, "").strip()
-            if token and not TOKEN_PATTERN.fullmatch(token):
+            if errors:
+                pass
+            elif token and not TOKEN_PATTERN.fullmatch(token):
                 errors[CONF_PAIRING_TOKEN] = "invalid_token"
             elif token and _token_in_use(self, token, entry):
                 errors["base"] = "already_configured"
@@ -82,18 +96,27 @@ class ICloudRemindersBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             name = user_input[CONF_NAME].strip()
             bridge_id = user_input[CONF_BRIDGE_ID].strip()
             token = user_input[CONF_PAIRING_TOKEN].strip()
-            allowed_list_ids = _parse_allowed_list_ids(
-                user_input[CONF_ALLOWED_LIST_IDS]
-            )
-            if not name:
+            try:
+                allowed_list_ids = _parse_allowed_list_ids(
+                    user_input[CONF_ALLOWED_LIST_IDS]
+                )
+                allowed_calendar_ids = _parse_allowed_list_ids(
+                    user_input.get(CONF_ALLOWED_CALENDAR_IDS, "")
+                )
+            except ValueError:
+                allowed_list_ids, allowed_calendar_ids = [], []
+                errors["base"] = "invalid_scope"
+            if errors:
+                pass
+            elif not name or len(name) > MAX_STRING_LENGTH:
                 errors[CONF_NAME] = "invalid_name"
-            elif not bridge_id:
+            elif not bridge_id or len(bridge_id) > MAX_STRING_LENGTH:
                 errors[CONF_BRIDGE_ID] = "invalid_bridge_id"
             elif _bridge_id_in_use(self, bridge_id):
                 errors["base"] = "already_configured"
             elif not TOKEN_PATTERN.fullmatch(token):
                 errors[CONF_PAIRING_TOKEN] = "invalid_token"
-            elif not allowed_list_ids and not _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_CALENDAR_IDS, "")):
+            elif not allowed_list_ids and not allowed_calendar_ids:
                 errors[CONF_ALLOWED_LIST_IDS] = "no_lists"
             else:
                 unique_id = hashlib.sha256(token.encode()).hexdigest()
@@ -106,7 +129,7 @@ class ICloudRemindersBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_BRIDGE_ID: user_input[CONF_BRIDGE_ID].strip(),
                         CONF_PAIRING_TOKEN: token,
                         CONF_ALLOWED_LIST_IDS: allowed_list_ids,
-                        CONF_ALLOWED_CALENDAR_IDS: _parse_allowed_list_ids(user_input.get(CONF_ALLOWED_CALENDAR_IDS, "")),
+                        CONF_ALLOWED_CALENDAR_IDS: allowed_calendar_ids,
                     },
                 )
 
@@ -133,13 +156,19 @@ class ICloudRemindersBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 def _parse_allowed_list_ids(value: str) -> list[str]:
     """Parse one exact EventKit list ID per line."""
+    if not isinstance(value, str):
+        raise ValueError("scope IDs must be text")
     list_ids: list[str] = []
     seen: set[str] = set()
     for raw_id in value.splitlines():
         list_id = raw_id.strip()
+        if len(list_id) > MAX_STRING_LENGTH:
+            raise ValueError("scope ID is too long")
         if list_id and list_id not in seen:
             list_ids.append(list_id)
             seen.add(list_id)
+            if len(list_ids) > MAX_LISTS:
+                raise ValueError("too many scope IDs")
     return list_ids
 
 

@@ -116,3 +116,54 @@ async def test_initial_setup_rejects_duplicate_bridge_id():
         }
     ) == {"type": "form"}
     assert flow.async_show_form.call_args.kwargs["errors"] == {"base": "already_configured"}
+
+
+@pytest.mark.asyncio
+async def test_initial_setup_rejects_oversized_scope_or_identity():
+    flow = ICloudRemindersBridgeConfigFlow()
+    flow.async_show_form = MagicMock(return_value={"type": "form"})
+
+    result = await flow.async_step_user(
+        {
+            "name": "Fruit Forwarder",
+            CONF_BRIDGE_ID: "x" * 4097,
+            CONF_PAIRING_TOKEN: "a" * 64,
+            CONF_ALLOWED_LIST_IDS: "list",
+            CONF_ALLOWED_CALENDAR_IDS: "",
+        }
+    )
+    assert result == {"type": "form"}
+    assert flow.async_show_form.call_args.kwargs["errors"] == {"bridge_id": "invalid_bridge_id"}
+
+    flow.async_show_form.reset_mock()
+    result = await flow.async_step_user(
+        {
+            "name": "Fruit Forwarder",
+            CONF_BRIDGE_ID: "mac",
+            CONF_PAIRING_TOKEN: "a" * 64,
+            CONF_ALLOWED_LIST_IDS: "x" * 4097,
+            CONF_ALLOWED_CALENDAR_IDS: "",
+        }
+    )
+    assert result == {"type": "form"}
+    assert flow.async_show_form.call_args.kwargs["errors"] == {"base": "invalid_scope"}
+
+
+@pytest.mark.asyncio
+async def test_initial_setup_does_not_create_entry_for_invalid_scope():
+    flow = ICloudRemindersBridgeConfigFlow()
+    flow.async_show_form = MagicMock(return_value={"type": "form"})
+    flow.async_create_entry = MagicMock()
+
+    result = await flow.async_step_user(
+        {
+            "name": "Fruit Forwarder",
+            CONF_BRIDGE_ID: "mac",
+            CONF_PAIRING_TOKEN: "a" * 64,
+            CONF_ALLOWED_LIST_IDS: "x" * 4097,
+            CONF_ALLOWED_CALENDAR_IDS: "",
+        }
+    )
+
+    assert result == {"type": "form"}
+    flow.async_create_entry.assert_not_called()
