@@ -3,6 +3,8 @@ package reminderstore
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pdfowler/fruit-forwarder/internal/config"
@@ -14,7 +16,15 @@ func DiscoverCalendars(ctx context.Context, helperPath string) ([]model.Calendar
 		return nil, err
 	}
 	out, err := (&commandRunner{helperPath: helperPath}).Run(ctx, request{Action: "calendars"})
-	return out.Calendars, err
+	if err != nil {
+		return nil, err
+	}
+	for _, calendar := range out.Calendars {
+		if err := validateCalendar(calendar); err != nil {
+			return nil, fmt.Errorf("EventKit returned an invalid calendar: %w", err)
+		}
+	}
+	return out.Calendars, nil
 }
 
 func (s *Store) CalendarsEnabled() bool { return len(s.calendars) > 0 }
@@ -53,6 +63,9 @@ func (s *Store) CalendarEvents(ctx context.Context, id, start, end string) ([]mo
 	if len(out.Calendars) != 1 || out.Calendars[0].ID != id {
 		return nil, errors.New("EventKit returned an unexpected calendar scope")
 	}
+	if err := validateCalendar(out.Calendars[0]); err != nil {
+		return nil, fmt.Errorf("EventKit returned an invalid calendar: %w", err)
+	}
 	configured := s.calendar(id)
 	if configured == nil || out.Calendars[0].Name != configured.Name {
 		return nil, errors.New("configured calendar name changed or is unavailable")
@@ -69,7 +82,11 @@ func (s *Store) CalendarEvents(ctx context.Context, id, start, end string) ([]mo
 		}
 		a, aerr := time.Parse(layout, item.Start)
 		b, berr := time.Parse(layout, item.End)
-		if item.UID == "" || seen[item.UID] || aerr != nil || berr != nil || !b.After(a) {
+		if item.UID == "" || seen[item.UID] || aerr != nil || berr != nil || !b.After(a) ||
+			len(item.UID) > maxFieldLength || len(item.Summary) > maxFieldLength ||
+			len(item.Start) > maxFieldLength || len(item.End) > maxFieldLength ||
+			len(item.TimeZone) > maxFieldLength || len(item.Description) > maxFieldLength ||
+			len(item.Location) > maxFieldLength {
 			return nil, errors.New("EventKit returned an invalid or duplicate event")
 		}
 		seen[item.UID] = true
@@ -78,6 +95,22 @@ func (s *Store) CalendarEvents(ctx context.Context, id, start, end string) ([]mo
 		items = []model.Event{}
 	}
 	return items, nil
+}
+
+func validateCalendar(calendar model.Calendar) error {
+	if strings.TrimSpace(calendar.ID) == "" || len(calendar.ID) > maxFieldLength {
+		return errors.New("calendar id is empty or too long")
+	}
+	if strings.TrimSpace(calendar.Name) == "" || len(calendar.Name) > maxSummaryLength {
+		return errors.New("calendar name is empty or too long")
+	}
+	if len(calendar.Source) > maxFieldLength {
+		return errors.New("calendar source is too long")
+	}
+	if len(calendar.Events) > 10000 {
+		return errors.New("calendar contains too many events")
+	}
+	return nil
 }
 
 func (s *Store) calendar(id string) *config.List {

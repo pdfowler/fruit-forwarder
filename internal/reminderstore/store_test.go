@@ -164,9 +164,31 @@ func TestUpdateRequiresUID(t *testing.T) {
 	}
 }
 
+func TestWriteRejectsOversizedFields(t *testing.T) {
+	store := NewWithRunner(testConfig(), &fakeRunner{})
+	for _, item := range []model.Item{
+		{Summary: strings.Repeat("x", 257)},
+		{Summary: "Task", Description: strings.Repeat("x", 4097)},
+	} {
+		if _, err := store.Create(context.Background(), "allowed", item); err == nil {
+			t.Fatal("oversized reminder field was accepted")
+		}
+	}
+}
+
+func TestSnapshotRejectsOversizedHelperFields(t *testing.T) {
+	runner := &fakeRunner{snapshot: []model.List{{
+		ID: "allowed", Name: "Example List",
+		Items: []model.Item{{UID: "item", Summary: strings.Repeat("x", 257), Status: "needs_action"}},
+	}}}
+	if _, err := NewWithRunner(testConfig(), runner).Snapshot(context.Background()); err == nil {
+		t.Fatal("oversized helper reminder field was accepted")
+	}
+}
+
 func TestSetCompletedUsesScopedAction(t *testing.T) {
 	t.Parallel()
-	runner := &fakeRunner{item: &model.Item{UID: "item", Status: "completed"}}
+	runner := &fakeRunner{item: &model.Item{UID: "item", Summary: "Task", Status: "completed"}}
 	store := NewWithRunner(testConfig(), runner)
 	if _, err := store.SetCompleted(context.Background(), "allowed", "item", true); err != nil {
 		t.Fatal(err)

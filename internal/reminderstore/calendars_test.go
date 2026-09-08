@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/pdfowler/fruit-forwarder/internal/config"
 	"github.com/pdfowler/fruit-forwarder/internal/model"
+	"strings"
 	"testing"
 )
 
@@ -63,5 +64,16 @@ func TestCalendarResponseValidation(t *testing.T) {
 				t.Fatal("helper query not scoped")
 			}
 		})
+	}
+}
+
+func TestCalendarResponseRejectsOversizedFields(t *testing.T) {
+	calendar := model.Calendar{ID: "allowed", Name: "Events", Events: []model.Event{{
+		UID: "event", Summary: strings.Repeat("x", 4097), Start: "2026-01-03", End: "2026-01-04", AllDay: true,
+	}}}
+	runner := &calendarRunner{output: response{Calendars: []model.Calendar{calendar}}}
+	store := NewWithRunner(&config.Config{Calendars: []config.List{{ID: "allowed", Name: "Events"}}}, runner)
+	if _, err := store.CalendarEvents(context.Background(), "allowed", "2026-01-01T00:00:00Z", "2026-02-01T00:00:00Z"); err == nil {
+		t.Fatal("oversized calendar event field was accepted")
 	}
 }

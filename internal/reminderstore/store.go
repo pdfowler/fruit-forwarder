@@ -45,6 +45,8 @@ type commandRunner struct {
 const (
 	maxHelperOutputBytes = 8 << 20
 	maxHelperErrorBytes  = 16 << 10
+	maxSummaryLength     = 256
+	maxFieldLength       = 4096
 )
 
 type boundedBuffer struct {
@@ -170,6 +172,9 @@ func (s *Store) ValidateLists(ctx context.Context) error {
 	}
 	byID := make(map[string]model.List, len(output.Lists))
 	for _, list := range output.Lists {
+		if err := validateList(list); err != nil {
+			return fmt.Errorf("EventKit returned an invalid reminder list: %w", err)
+		}
 		byID[list.ID] = list
 	}
 	for id, configured := range s.allowed {
@@ -194,6 +199,9 @@ func (s *Store) Lists(ctx context.Context) ([]model.List, error) {
 	}
 	result := make([]model.List, 0, len(s.allowed))
 	for _, list := range output.Lists {
+		if err := validateList(list); err != nil {
+			return nil, fmt.Errorf("EventKit returned an invalid reminder list: %w", err)
+		}
 		if _, ok := s.allowed[list.ID]; ok {
 			list.Items = nil
 			result = append(result, list)
@@ -218,6 +226,9 @@ func (s *Store) Snapshot(ctx context.Context) ([]model.List, error) {
 	}
 	seen := make(map[string]struct{}, len(output.Lists))
 	for i := range output.Lists {
+		if err := validateList(output.Lists[i]); err != nil {
+			return nil, fmt.Errorf("EventKit returned an invalid reminder list: %w", err)
+		}
 		configured, ok := s.allowed[output.Lists[i].ID]
 		if !ok {
 			return nil, fmt.Errorf("EventKit returned unexpected list %q", output.Lists[i].ID)
@@ -230,6 +241,9 @@ func (s *Store) Snapshot(ctx context.Context) ([]model.List, error) {
 		// represented instead of rejecting the entire list snapshot.
 		items := output.Lists[i].Items[:0]
 		for _, item := range output.Lists[i].Items {
+			if err := validateItem(item, true, false); err != nil {
+				return nil, fmt.Errorf("EventKit returned an invalid reminder: %w", err)
+			}
 			if strings.TrimSpace(item.Summary) == "" {
 				continue
 			}
@@ -289,11 +303,8 @@ func (s *Store) checkWrite(listID string, item model.Item, requireUID bool) erro
 	if requireUID && strings.TrimSpace(item.UID) == "" {
 		return errors.New("reminder uid is required")
 	}
-	if strings.TrimSpace(item.Summary) == "" {
-		return errors.New("summary is required")
-	}
-	if item.Status != "" && item.Status != "needs_action" && item.Status != "completed" {
-		return fmt.Errorf("unsupported reminder status %q", item.Status)
+	if err := validateItem(item, requireUID, true); err != nil {
+		return err
 	}
 	return nil
 }
@@ -306,7 +317,55 @@ func (s *Store) write(ctx context.Context, input request) (*model.Item, error) {
 	if output.Item == nil || strings.TrimSpace(output.Item.UID) == "" {
 		return nil, errors.New("EventKit helper returned no reminder")
 	}
+	if err := validateItem(*output.Item, true, true); err != nil {
+		return nil, fmt.Errorf("EventKit returned an invalid reminder: %w", err)
+	}
 	return output.Item, nil
+}
+
+func validateList(list model.List) error {
+	if strings.TrimSpace(list.ID) == "" || len(list.ID) > maxFieldLength {
+		return errors.New("list id is empty or too long")
+	}
+	if strings.TrimSpace(list.Name) == "" || len(list.Name) > maxSummaryLength {
+		return errors.New("list name is empty or too long")
+	}
+	if len(list.Source) > maxFieldLength {
+		return errors.New("list source is too long")
+	}
+	if len(list.Items) > 10000 {
+		return errors.New("list contains too many reminders")
+	}
+	return nil
+}
+
+func validateItem(item model.Item, requireUID, requireSummary bool) error {
+	if len(item.UID) > maxFieldLength || (requireUID && strings.TrimSpace(item.UID) == "") {
+		if requireUID {
+			return errors.New("reminder uid is empty or too long")
+		}
+		return errors.New("reminder uid is too long")
+	}
+	if requireSummary && strings.TrimSpace(item.Summary) == "" {
+		return errors.New("summary is required")
+	}
+	if len(item.Summary) > maxSummaryLength {
+		return errors.New("summary is too long")
+	}
+	if item.Status != "" && item.Status != "needs_action" && item.Status != "completed" {
+		return fmt.Errorf("unsupported reminder status %q", item.Status)
+	}
+	for field, value := range map[string]string{
+		"description": item.Description,
+		"due":         item.Due,
+		"completed":   item.Completed,
+		"modified":    item.Modified,
+	} {
+		if len(value) > maxFieldLength {
+			return fmt.Errorf("%s is too long", field)
+		}
+	}
+	return nil
 }
 
 func (s *Store) ApplyCommand(ctx context.Context, command model.Command) error {
