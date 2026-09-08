@@ -1,10 +1,10 @@
 module github.com/pdfowler/fruit-forwarder
 
-go 1.24.5
+go 1.25.0
 
 require (
 	github.com/modelcontextprotocol/go-sdk v1.3.1
-	golang.org/x/sys v0.41.0
+	golang.org/x/sys v0.47.0
 )
 
 require (
