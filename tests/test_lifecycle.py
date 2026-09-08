@@ -54,3 +54,28 @@ async def test_setup_registers_runtime_token():
         assert await async_setup_entry(hass, entry)
     assert entry.runtime_data.webhook_token == "old-token"
     assert register.call_args.args[3] == "old-token"
+
+
+@pytest.mark.asyncio
+async def test_setup_failure_unregisters_webhook():
+    entry = SimpleNamespace(
+        entry_id="entry",
+        title="Fruit Forwarder",
+        data={"pairing_token": "new-token"},
+        runtime_data=None,
+        async_on_unload=MagicMock(),
+    )
+    hass = SimpleNamespace(
+        config_entries=SimpleNamespace(
+            async_forward_entry_setups=AsyncMock(side_effect=RuntimeError("platform failed")),
+        )
+    )
+
+    with (
+        patch("custom_components.icloud_reminders_bridge.BridgeRuntime", FakeRuntime),
+        patch("custom_components.icloud_reminders_bridge.webhook.async_register"),
+        patch("custom_components.icloud_reminders_bridge.webhook.async_unregister") as unregister,
+    ):
+        with pytest.raises(RuntimeError, match="platform failed"):
+            await async_setup_entry(hass, entry)
+    unregister.assert_called_once_with(hass, "old-token")

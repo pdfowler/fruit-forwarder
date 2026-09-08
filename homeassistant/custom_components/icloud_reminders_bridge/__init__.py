@@ -47,16 +47,26 @@ async def async_setup_entry(
             return web.json_response({"error": "invalid_payload", "message": str(err)}, status=400)
         return web.json_response(response, headers={"Cache-Control": "no-store"})
 
-    webhook.async_register(
-        hass,
-        DOMAIN,
-        entry.title,
-        runtime.webhook_token,
-        handle_webhook,
-        local_only=True,
-        allowed_methods={"POST"},
-    )
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    registered = False
+    try:
+        webhook.async_register(
+            hass,
+            DOMAIN,
+            entry.title,
+            runtime.webhook_token,
+            handle_webhook,
+            local_only=True,
+            allowed_methods={"POST"},
+        )
+        registered = True
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    except BaseException:
+        # A platform setup failure must not leave a bearer-token webhook
+        # registered for a config entry HA considers failed. This also makes a
+        # reload retry safe after a transient platform or storage error.
+        if registered:
+            webhook.async_unregister(hass, runtime.webhook_token)
+        raise
     return True
 
 
