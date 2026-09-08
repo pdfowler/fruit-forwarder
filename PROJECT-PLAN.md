@@ -291,14 +291,14 @@ Tooling references: [Task guide](https://taskfile.dev/docs/guide), [Task schema]
 
 **Priority: release blocker. Dependencies: B–D.**
 
-1. Finish and test the existing uncommitted reconfiguration flow. Preserve entry IDs, entity identities, pairing and unrelated settings when changing allowlists.
-2. Fix duplicate integration identity: distinguish a bridge identity from a token that can rotate. Handle duplicate bridge IDs and duplicate tokens predictably.
-3. Implement deliberate pairing-token rotation and recovery without requiring users to delete their integration. Reject mismatched or invalid bridge identifiers and empty required names.
+1. The reconfiguration flow is implemented and synthetically tested; live HA acceptance must still verify preserved entry IDs, entity identities, pairing and unrelated settings when changing allowlists.
+2. Duplicate integration identity is implemented and synthetically tested: bridge identity is distinct from a rotatable token, and duplicate bridge IDs/tokens are rejected predictably.
+3. Pairing-token rotation and recovery are implemented without requiring entry deletion; live HA acceptance must still verify rotation, mismatch handling and recovery on an installed entry.
 4. Test first setup, failed setup, reload, unload, restart, reconfigure and removal using HA's real config-entry and entity lifecycle.
 5. Test HTTP webhook registration, locality restrictions, allowed methods, unknown tokens, malformed/oversized/chunked payloads and response handling.
-6. Define visibility and cleanup for revoked, renamed or missing lists/calendars. Mark stale sources unavailable according to documented freshness thresholds.
-7. Make pending, failed and uncertain commands visible with actionable recovery. Bound or coalesce repeated queued operations while a Mac is offline.
-8. Add useful diagnostics and repair messages: permission denied, bridge offline, token mismatch, unsupported protocol, excessive payload and window unavailable.
+6. Visibility, cleanup and stale-source handling are implemented with documented freshness thresholds; live HA acceptance must verify revoked, renamed and missing lists/calendars.
+7. Pending, failed and uncertain commands are visible with actionable recovery, and queued mutation fields are bounded; live HA acceptance must verify the UX while the Mac is offline.
+8. Redacted diagnostics and actionable error paths cover permission denied, bridge offline, token mismatch, unsupported protocol, excessive payload and unavailable calendar windows; live repair-surface acceptance remains.
 9. Test persistence with actual HA storage and failure injection, not only a mocked storage object.
 10. Provide reminder and calendar dashboard examples using standard cards, with optional advanced examples kept separate.
 11. Keep configuration labels, error messages, translations, integration name, device naming and documentation consistent with the final product name.
@@ -346,7 +346,7 @@ Design a separate milestone for authenticated network transport: supported MCP a
 
 **Priority: release blocker. Dependencies: A and project identity.**
 
-- Design a guided first-run experience: prerequisites, separate permission grants, discovery, scope selection, HA pairing, MCP configuration, connectivity check and a clear success state.
+- Document the guided first-run sequence in the setup guide: prerequisites, separate permission grants, discovery, scope selection, HA pairing, MCP configuration, connectivity check and a clear success state; validate it with an independent real-user install.
 - Add `status`/`doctor`, version reporting and actionable exit codes. Keep config validation distinct from live access checks; the CLI now reports helper, Keychain, state, and unresolved-command health without exposing reminder contents, with focused diagnostics tests.
 - Discovery honors the configured `eventkit_helper_path` (with an explicit CLI override and a default only when no config exists); keep the regression test and include the configured path in installed-artifact acceptance.
 - Render LaunchAgent configuration safely for spaces and XML/shell-special characters in user paths. Validate inputs and environment assumptions; the renderer now has a regression test covering escaped paths and stable service identity.
