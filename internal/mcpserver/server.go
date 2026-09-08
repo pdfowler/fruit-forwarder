@@ -32,10 +32,14 @@ type ListsOutput struct {
 type ListInput struct {
 	ListID string `json:"list_id" jsonschema:"Exact allowlisted EventKit reminder list identifier."`
 	Status string `json:"status,omitempty" jsonschema:"Optional status filter: needs_action or completed."`
+	Offset int    `json:"offset,omitempty" jsonschema:"Zero-based result offset; use next_offset from the previous response."`
+	Limit  int    `json:"limit,omitempty" jsonschema:"Maximum 100 results; defaults to 100."`
 }
 
 type ItemsOutput struct {
-	Items []model.Item `json:"items"`
+	Items      []model.Item `json:"items"`
+	Total      int          `json:"total"`
+	NextOffset *int         `json:"next_offset,omitempty"`
 }
 
 type CreateInput struct {
@@ -119,7 +123,11 @@ func (s *Server) items(ctx context.Context, _ *mcp.CallToolRequest, input ListIn
 				items = append(items, item)
 			}
 		}
-		return nil, ItemsOutput{Items: items}, nil
+		start, end, next, err := pageBounds(input.Offset, input.Limit, len(items))
+		if err != nil {
+			return nil, ItemsOutput{}, err
+		}
+		return nil, ItemsOutput{Items: items[start:end], Total: len(items), NextOffset: next}, nil
 	}
 	return nil, ItemsOutput{}, fmt.Errorf("list %q is outside the allowlist", input.ListID)
 }

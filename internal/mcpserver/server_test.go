@@ -131,6 +131,29 @@ func TestProtocolAccessPolicy(t *testing.T) {
 			if len(output.Items) != 1 || output.Items[0].UID != "active" {
 				t.Fatalf("unexpected filtered items: %+v", output)
 			}
+			page, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "reminders_list", Arguments: map[string]any{
+				"list_id": "allowed", "limit": 1,
+			}})
+			if err != nil || page.IsError {
+				t.Fatalf("paginated list: %v, %v", page, err)
+			}
+			var firstPage ItemsOutput
+			data, err = json.Marshal(page.StructuredContent)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(data, &firstPage); err != nil {
+				t.Fatal(err)
+			}
+			if len(firstPage.Items) != 1 || firstPage.Total != 2 || firstPage.NextOffset == nil || *firstPage.NextOffset != 1 {
+				t.Fatalf("unexpected first page: %+v", firstPage)
+			}
+			invalid, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "reminders_list", Arguments: map[string]any{
+				"list_id": "allowed", "limit": maxPageSize + 1,
+			}})
+			if err == nil && !invalid.IsError {
+				t.Fatal("oversized page unexpectedly succeeded")
+			}
 			for _, args := range []map[string]any{
 				{"list_id": "outside"},
 				{"list_id": "allowed", "status": "invalid"},

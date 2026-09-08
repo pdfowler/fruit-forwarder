@@ -26,6 +26,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   the shared state lock.
 - Serialize per-operation MCP EventKit access with HA synchronization and
   recovery without blocking the MCP session between calls.
+- Add bounded offset/limit pagination to MCP reminder and calendar result tools
+  to avoid sending an entire history in one response.
 - Add guarded `task publish:release`, `task publish:hacs`, and `task publish:mcp`
   wrappers with exact-tag and attribution preflight.
 - Preserve signed macOS toolchain metadata when the final release job merges

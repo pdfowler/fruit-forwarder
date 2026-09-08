@@ -34,6 +34,12 @@ The host may need its own macOS Reminders permission. A successful MCP
 handshake proves only that the stdio process speaks the protocol; it does not
 prove EventKit access, allowlist correctness, or Apple synchronization.
 
+`reminders_list` and `calendar_events` default to at most 100 results. Pass
+`limit` (1–100) and a zero-based `offset`; when more results remain, the
+response includes `next_offset`. This keeps completed-history and long event
+windows out of a single model context while preserving deterministic access to
+the full bounded snapshot.
+
 ## Acceptance record required for a named client
 
 Before adding a client name to the supported matrix, record the exact client
