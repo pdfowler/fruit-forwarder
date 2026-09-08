@@ -38,22 +38,13 @@ if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
   exit 2
 fi
 
-(
-  cd "${SERVICE_DIR}"
-  go build -trimpath -ldflags "-X main.version=${VERSION}" -o "build/icloud-reminders-bridge" ./cmd/icloud-reminders-bridge
-  swiftc -O -parse-as-library eventkit-helper/main.swift \
-    -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
-    -Xlinker "${SERVICE_DIR}/deployment/eventkit-helper-Info.plist" \
-    -o "build/icloud-reminders-eventkit"
-)
+BUILD_OUTPUT="${SERVICE_DIR}/build/macos-${VERSION}"
+"${SERVICE_DIR}/scripts/build-macos.sh" "${VERSION}" "${BUILD_OUTPUT}"
 STAGE_BRIDGE="${BIN_DIR}/.icloud-reminders-bridge.new"
 STAGE_EVENTKIT="${BIN_DIR}/.icloud-reminders-eventkit.new"
-install -m 0755 "${SERVICE_DIR}/build/icloud-reminders-bridge" "${STAGE_BRIDGE}"
-install -m 0755 "${SERVICE_DIR}/build/icloud-reminders-eventkit" "${STAGE_EVENTKIT}"
-codesign --force --sign - --options runtime \
-  --identifier "${SERVICE_LABEL}.eventkit" \
-  --entitlements "${SERVICE_DIR}/deployment/reminders.entitlements" \
-  "${STAGE_EVENTKIT}"
+install -m 0755 "${BUILD_OUTPUT}/bin/icloud-reminders-bridge" "${STAGE_BRIDGE}"
+install -m 0755 "${BUILD_OUTPUT}/bin/icloud-reminders-eventkit" "${STAGE_EVENTKIT}"
+codesign --verify --strict "${STAGE_BRIDGE}"
 codesign --verify --strict "${STAGE_EVENTKIT}"
 
 # Keep the previous pair recoverable and switch each executable with an atomic

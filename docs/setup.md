@@ -164,8 +164,9 @@ server and EventKit helper. Install that artifact only in an MCP host that
 supports MCPB/Desktop Extension packages, then point its required configuration
 file setting at a user-owned copy of `packaging/mcp/config.example.json` with
 the exact IDs discovered on that Mac. The MCPB path does not require Home
-Assistant or an HA token. The artifact is macOS-only and remains unsigned until
-maintainer signing credentials are supplied to the release workflow.
+Assistant or an HA token. The artifact is macOS-only. Its native executables are
+ad-hoc signed for local boundary testing; a distributable release still requires
+maintainer-controlled Developer ID signing and notarization.
 
 `task package:macos` produces the companion versioned macOS tarball. These
 commands prepare artifacts only; publishing a GitHub release, HACS repository,
