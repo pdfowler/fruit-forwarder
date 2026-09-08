@@ -47,8 +47,9 @@ bridge recover --command-id COMMAND_ID --resolution retry
 `applied` records the command as acknowledged without invoking EventKit again.
 `retry` clears the journal so the command may be sent on a later sync. Neither
 choice proves an external Apple edit; the operator's inspection is part of the
-recovery evidence. Both recovery resolutions acquire the same state lock as
-normal synchronization, so they cannot race a running `serve` or `sync-once`.
+recovery evidence. Both recovery resolutions and MCP EventKit operations acquire
+the same state lock as normal synchronization, so they cannot race a running
+`serve` or `sync-once`.
 
 ## Retention and bounds
 

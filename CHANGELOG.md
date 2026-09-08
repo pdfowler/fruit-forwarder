@@ -24,6 +24,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   after a timestamped bridge sync has been established.
 - Serialize uncertain-command recovery with normal bridge state updates using
   the shared state lock.
+- Serialize per-operation MCP EventKit access with HA synchronization and
+  recovery without blocking the MCP session between calls.
 - Add guarded `task publish:release`, `task publish:hacs`, and `task publish:mcp`
   wrappers with exact-tag and attribution preflight.
 - Preserve signed macOS toolchain metadata when the final release job merges

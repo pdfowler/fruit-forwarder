@@ -102,7 +102,8 @@ func run() error {
 	defer cancel()
 	switch command {
 	case "mcp":
-		return mcpserver.RunWithVersion(ctx, store, cfg.MCPReadOnly, version)
+		lockedStore := reminderstore.NewLocked(store, cfg.StatePath+".lock")
+		return mcpserver.RunWithVersion(ctx, lockedStore, cfg.MCPReadOnly, version)
 	case "sync-once", "serve":
 		if cfg.HomeAssistantURL == "" {
 			return errors.New("home_assistant_url is required for Home Assistant sync")
