@@ -92,6 +92,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
 - Add a guarded, tag-only MCP Registry publication workflow that validates the
   immutable MCPB release asset before OIDC publication, with a pinned publisher
   URL and SHA-256 supplied at protected dispatch time.
+- Record installed macOS candidate foreground acceptance on Dean while keeping
+  the legacy writer active and the cutover boundary explicit.
 
 ## 0.1.0 — candidate
 

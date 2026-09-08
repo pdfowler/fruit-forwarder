@@ -229,6 +229,27 @@ launchd/process lifecycle check on a signed macOS installation.
   the installed live entry is still the legacy source and remains a separate
   cutover and lifecycle gate.
 
+### Installed candidate foreground acceptance (2026-09-08 UTC)
+
+- The generated `fruit-forwarder-macos-0.1.0.tar.gz` was installed on Dean
+  with `--install-only`. The candidate LaunchAgent was not activated, and the
+  legacy `net.pdfowler.icloud-reminders-bridge` service remained the only
+  active writer.
+- Installed `status --json` and `doctor --json` reported executable and state
+  readiness, `state_lock_status: available`, Reminders authorization, and
+  Keychain readiness. Calendar authorization remained `not_determined` because
+  the migrated configuration has no calendar scope; no permission prompt was
+  triggered.
+- With the live Home Assistant pending-command queue empty, the installed
+  candidate completed a foreground `sync-once` successfully and applied zero
+  commands. The live HA entity's `last_sync` advanced to
+  `2026-09-08T06:13:41Z` and its pending-command count remained zero.
+- This proves the installed foreground/read-snapshot path and lock boundary
+  only. It does not prove candidate LaunchAgent activation, background TCC
+  behavior, reboot recovery, live candidate HA component installation,
+  calendar permission, real mutations, independent MCP-client acceptance, or
+  service cutover.
+
 ## Installed acceptance record template
 
 Create one redacted record per run, for example under a maintainer-controlled
