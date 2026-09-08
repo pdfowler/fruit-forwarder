@@ -48,9 +48,10 @@ be paired with the installed acceptance records below.
 
 ### Canonical repository candidate rebuild (2026-09-07)
 
-- `task release:prepare` passed from a clean source revision after the Go
-  module path was aligned with the planned public
-  `github.com/pdfowler/fruit-forwarder` repository.
+- `task check` and `task release:prepare` passed from the clean source revision
+  `3ccba608b4e8f1353e368e16b888a176b31100bd` after the Go module path was
+  aligned with the planned public `github.com/pdfowler/fruit-forwarder`
+  repository and the Home Assistant config-flow scope bounds were hardened.
 - The manifest records `source_dirty: false` and eight verified outputs: the
   HACS export and archive, macOS archive, MCPB and checksum sidecars, MCP
   Registry metadata, and the unified release manifest.
@@ -66,6 +67,8 @@ Both executable switches succeeded, rollback restored the pair, the example
 configuration remained present, and no LaunchAgent was activated. This proves
 the packaged transaction boundary only; it does not prove EventKit permission,
 background service, upgrade schema, or reboot behavior on the real account.
+
+### Earlier packaged transaction evidence (revision `4d9742f`)
 
 The macOS artifact from revision `4d9742f` was also exercised through
 `task install:local` in an isolated temporary `HOME` with
