@@ -465,4 +465,4 @@ Before declaring the project complete, attach evidence to every R1–R10 require
 
 The initial release is ready only when its promised user journeys work on supported environments, operational failures are recoverable, privacy/security claims are accurate, and a public distribution plus maintenance path exists. Open optional enhancements may remain; unresolved failures in required installation, mutation correctness, account access or supported HA/MCP behavior may not.
 
-This plan intentionally keeps the full objective intact. The next step after planning is an explicit resumption of implementation, not automatic execution of the tasks in this document.
+This plan intentionally keeps the full objective intact. Implementation is proceeding in staged, reviewable commits; completion still requires the evidence and publication gates above rather than treating repository builds as proof of live account, HA, MCP-client, or ecosystem behavior.
