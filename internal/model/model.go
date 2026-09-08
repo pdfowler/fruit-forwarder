@@ -48,6 +48,13 @@ type List struct {
 	Items    []Item `json:"items"`
 }
 
+// AccessStatus is a non-prompting EventKit authorization report. It contains
+// status names only, never account or household data.
+type AccessStatus struct {
+	Reminders string `json:"reminders"`
+	Calendars string `json:"calendars"`
+}
+
 type Snapshot struct {
 	Calendars         []Calendar `json:"calendars,omitempty"`
 	Capabilities      []string   `json:"capabilities,omitempty"`

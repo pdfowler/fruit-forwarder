@@ -111,9 +111,15 @@ private struct Request: Codable {
 }
 
 private struct Response: Codable {
-    var lists: [WireList]?
-    var item: WireItem?
+    var lists: [WireList]? = nil
+    var item: WireItem? = nil
     var calendars: [WireCalendar]? = nil
+    var authorization: WireAuthorization? = nil
+}
+
+private struct WireAuthorization: Codable {
+    let reminders: String
+    let calendars: String
 }
 
 private enum HelperError: LocalizedError {
@@ -190,6 +196,32 @@ private final class EventKitService {
         }
         guard try await store.requestFullAccessToEvents() else {
             throw HelperError.invalidRequest("Calendar access was not granted")
+        }
+    }
+
+    func authorizationStatus() -> WireAuthorization {
+        WireAuthorization(
+            reminders: Self.authorizationName(EKEventStore.authorizationStatus(for: .reminder)),
+            calendars: Self.authorizationName(EKEventStore.authorizationStatus(for: .event))
+        )
+    }
+
+    private static func authorizationName(_ status: EKAuthorizationStatus) -> String {
+        switch status {
+        case .notDetermined:
+            return "not_determined"
+        case .restricted:
+            return "restricted"
+        case .denied:
+            return "denied"
+        case .authorized:
+            return "authorized"
+        case .fullAccess:
+            return "full_access"
+        case .writeOnly:
+            return "write_only"
+        @unknown default:
+            return "unknown"
         }
     }
 
@@ -391,6 +423,13 @@ private struct Main {
             trace("request-decoded")
             let service = EventKitService()
             trace("event-store-created")
+            if request.action == "authorization" {
+                let response = Response(authorization: service.authorizationStatus())
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.sortedKeys]
+                FileHandle.standardOutput.write(try encoder.encode(response))
+                return
+            }
             if request.action == "calendar_snapshot" {
                 _ = try EventKitService.eventWindow(request)
             }

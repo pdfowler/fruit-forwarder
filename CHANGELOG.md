@@ -13,6 +13,9 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   workflows.
 - Add an explicit MCP client compatibility matrix separating generic stdio,
   MCPB package, named-client, and unsupported network claims.
+- Add a non-prompting EventKit authorization diagnostic so `doctor` can
+  distinguish executable readiness from the installed helper's actual
+  Reminders/Calendar permission state during migration and recovery.
 - Add guarded `task publish:release`, `task publish:hacs`, and `task publish:mcp`
   wrappers with exact-tag and attribution preflight.
 - Preserve signed macOS toolchain metadata when the final release job merges

@@ -133,17 +133,20 @@ func run() error {
 }
 
 type statusReport struct {
-	Version              string `json:"version"`
-	ConfigPath           string `json:"config_path"`
-	BridgeID             string `json:"bridge_id"`
-	HomeAssistantEnabled bool   `json:"home_assistant_enabled"`
-	EventKitHelper       string `json:"eventkit_helper"`
-	EventKitReady        bool   `json:"eventkit_ready"`
-	KeychainReady        *bool  `json:"keychain_ready,omitempty"`
-	StatePath            string `json:"state_path"`
-	StateReady           bool   `json:"state_ready"`
-	QueueEpoch           string `json:"queue_epoch,omitempty"`
-	InFlightCommandID    string `json:"in_flight_command_id,omitempty"`
+	Version                 string `json:"version"`
+	ConfigPath              string `json:"config_path"`
+	BridgeID                string `json:"bridge_id"`
+	HomeAssistantEnabled    bool   `json:"home_assistant_enabled"`
+	EventKitHelper          string `json:"eventkit_helper"`
+	EventKitReady           bool   `json:"eventkit_ready"`
+	EventKitRemindersAccess string `json:"eventkit_reminders_access,omitempty"`
+	EventKitCalendarsAccess string `json:"eventkit_calendars_access,omitempty"`
+	EventKitAccessError     string `json:"eventkit_access_error,omitempty"`
+	KeychainReady           *bool  `json:"keychain_ready,omitempty"`
+	StatePath               string `json:"state_path"`
+	StateReady              bool   `json:"state_ready"`
+	QueueEpoch              string `json:"queue_epoch,omitempty"`
+	InFlightCommandID       string `json:"in_flight_command_id,omitempty"`
 }
 
 func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) error {
@@ -171,6 +174,15 @@ func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) 
 		ready := keychainErr == nil
 		report.KeychainReady = &ready
 	}
+	if deep && (len(cfg.Lists) > 0 || len(cfg.Calendars) > 0) {
+		access, accessErr := reminderstore.Authorization(context.Background(), cfg.EventKitPath())
+		if accessErr != nil {
+			report.EventKitAccessError = accessErr.Error()
+		} else {
+			report.EventKitRemindersAccess = access.Reminders
+			report.EventKitCalendarsAccess = access.Calendars
+		}
+	}
 	if jsonOutput {
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "  ")
@@ -181,6 +193,15 @@ func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) 
 		fmt.Printf("Fruit Forwarder %s\n", report.Version)
 		fmt.Printf("  configuration: %s\n", report.ConfigPath)
 		fmt.Printf("  EventKit helper: %s (%s)\n", report.EventKitHelper, readiness(report.EventKitReady))
+		if report.EventKitRemindersAccess != "" {
+			fmt.Printf("  Reminders access: %s\n", report.EventKitRemindersAccess)
+		}
+		if report.EventKitCalendarsAccess != "" {
+			fmt.Printf("  Calendar access: %s\n", report.EventKitCalendarsAccess)
+		}
+		if report.EventKitAccessError != "" {
+			fmt.Printf("  EventKit access check: %s\n", report.EventKitAccessError)
+		}
 		fmt.Printf("  Home Assistant sync: %s\n", readiness(report.HomeAssistantEnabled))
 		if report.KeychainReady != nil {
 			fmt.Printf("  pairing Keychain item: %s\n", readiness(*report.KeychainReady))
@@ -198,6 +219,15 @@ func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) 
 	}
 	if deep && report.KeychainReady != nil && !*report.KeychainReady {
 		return errors.New("doctor: Home Assistant pairing token is not available in Keychain")
+	}
+	if deep && report.EventKitAccessError != "" {
+		return fmt.Errorf("doctor: EventKit access check failed: %s", report.EventKitAccessError)
+	}
+	if deep && len(cfg.Lists) > 0 && report.EventKitRemindersAccess != "full_access" && report.EventKitRemindersAccess != "authorized" {
+		return fmt.Errorf("doctor: Reminders access is %s; grant Full Access in System Settings", report.EventKitRemindersAccess)
+	}
+	if deep && len(cfg.Calendars) > 0 && report.EventKitCalendarsAccess != "full_access" && report.EventKitCalendarsAccess != "authorized" {
+		return fmt.Errorf("doctor: Calendar access is %s; grant Full Access in System Settings", report.EventKitCalendarsAccess)
 	}
 	if !report.StateReady {
 		return errors.New("doctor: acknowledgement state is unreadable")

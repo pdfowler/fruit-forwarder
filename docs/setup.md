@@ -62,8 +62,13 @@ Use the non-mutating diagnostics after an upgrade or reboot:
 ```
 
 `status` checks configuration and executable ownership without reading reminder
-contents. `doctor` additionally checks the Home Assistant pairing item in the
-login Keychain when HA sync is configured; neither command prints the token.
+contents. `doctor` additionally performs a non-prompting EventKit authorization
+check and checks the Home Assistant pairing item in the login Keychain when HA
+sync is configured; neither command prints the token. Its JSON output reports
+`eventkit_reminders_access` and `eventkit_calendars_access` separately. A
+`not_determined`, `denied`, or `restricted` result means that the installed
+helper's current macOS identity still needs permission; it is not evidence that
+the older helper identity was authorized.
 If a mutation reaches an ambiguous EventKit outcome, the bridge records the
 in-flight command and pauses further command application rather than blindly
 retrying it. Inspect the command ID with `doctor --json`, then choose an
@@ -180,7 +185,11 @@ If this Mac still runs the former `home-ctrl` deployment, pass
 `--migrate-home-ctrl` to the packaged installer. It copies the existing
 configuration, preserves its explicit Keychain/state paths, and retires the
 legacy LaunchAgent when that migration is activated. Review the copied config
-before the second installer invocation; do not run both services at once.
+before the second installer invocation; do not run both services at once. The
+new helper has a new Fruit Forwarder macOS identity, so grant it Reminders (and
+Calendar, when configured) access in System Settings before starting the new
+LaunchAgent. A staged `--install-only` run intentionally does not request that
+permission or stop the legacy service.
 
 To stop and remove only the installed service files while preserving household
 configuration, pairing, state, rollback copies, and logs, run the bundled

@@ -29,9 +29,10 @@ type request struct {
 }
 
 type response struct {
-	Calendars []model.Calendar `json:"calendars,omitempty"`
-	Lists     []model.List     `json:"lists,omitempty"`
-	Item      *model.Item      `json:"item,omitempty"`
+	Calendars     []model.Calendar    `json:"calendars,omitempty"`
+	Lists         []model.List        `json:"lists,omitempty"`
+	Item          *model.Item         `json:"item,omitempty"`
+	Authorization *model.AccessStatus `json:"authorization,omitempty"`
 }
 
 type Runner interface {
@@ -137,6 +138,36 @@ func Discover(ctx context.Context, helperPath string) ([]model.List, error) {
 		return nil, err
 	}
 	return output.Lists, nil
+}
+
+// Authorization reports EventKit permission state without requesting access.
+// This is intended for diagnostics: it never triggers a macOS permission
+// prompt and does not read reminder or calendar contents.
+func Authorization(ctx context.Context, helperPath string) (model.AccessStatus, error) {
+	if err := validateExecutable(helperPath); err != nil {
+		return model.AccessStatus{}, fmt.Errorf("EventKit helper: %w", err)
+	}
+	output, err := (&commandRunner{helperPath: helperPath}).Run(ctx, request{Action: "authorization"})
+	if err != nil {
+		return model.AccessStatus{}, err
+	}
+	if output.Authorization == nil {
+		return model.AccessStatus{}, errors.New("EventKit helper returned no authorization status")
+	}
+	status := *output.Authorization
+	if !validAuthorizationStatus(status.Reminders) || !validAuthorizationStatus(status.Calendars) {
+		return model.AccessStatus{}, errors.New("EventKit helper returned an invalid authorization status")
+	}
+	return status, nil
+}
+
+func validAuthorizationStatus(value string) bool {
+	switch value {
+	case "not_determined", "restricted", "denied", "authorized", "full_access", "write_only", "unknown":
+		return true
+	default:
+		return false
+	}
 }
 
 func validateExecutable(path string) error {

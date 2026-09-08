@@ -42,6 +42,30 @@ func TestDiscoverRejectsExcessiveHelperOutput(t *testing.T) {
 	}
 }
 
+func TestAuthorizationIsNonPromptingAndValidatesStatuses(t *testing.T) {
+	path := t.TempDir() + "/helper"
+	script := "#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '{\"authorization\":{\"reminders\":\"full_access\",\"calendars\":\"not_determined\"}}'\n"
+	if err := os.WriteFile(path, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	status, err := Authorization(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.Reminders != "full_access" || status.Calendars != "not_determined" {
+		t.Fatalf("unexpected authorization status: %#v", status)
+	}
+
+	badPath := t.TempDir() + "/helper"
+	badScript := "#!/bin/sh\nprintf '%s\\n' '{\"authorization\":{\"reminders\":\"unexpected\",\"calendars\":\"full_access\"}}'\n"
+	if err := os.WriteFile(badPath, []byte(badScript), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Authorization(context.Background(), badPath); err == nil || !strings.Contains(err.Error(), "invalid authorization") {
+		t.Fatalf("invalid authorization status accepted: %v", err)
+	}
+}
+
 type fakeRunner struct {
 	lists    []model.List
 	snapshot []model.List

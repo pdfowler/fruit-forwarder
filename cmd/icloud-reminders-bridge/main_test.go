@@ -244,6 +244,24 @@ func TestReportStatusAcceptsReadyConfiguration(t *testing.T) {
 	}
 }
 
+func TestReportStatusChecksEventKitAccessWithoutPrompting(t *testing.T) {
+	dir := t.TempDir()
+	helper := filepath.Join(dir, "eventkit-helper")
+	script := "#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '{\"authorization\":{\"reminders\":\"full_access\",\"calendars\":\"not_determined\"}}'\n"
+	if err := os.WriteFile(helper, []byte(script), 0700); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{
+		BridgeID:       "mac",
+		EventKitHelper: helper,
+		StatePath:      filepath.Join(dir, "state.json"),
+		Lists:          []config.List{{ID: "list", Name: "Tasks"}},
+	}
+	if err := reportStatus(cfg, filepath.Join(dir, "config.json"), true, true); err != nil {
+		t.Fatalf("ready access report returned an error: %v", err)
+	}
+}
+
 func TestReportStatusRejectsUnsafeHelper(t *testing.T) {
 	cfg := &config.Config{
 		BridgeID:       "mac",

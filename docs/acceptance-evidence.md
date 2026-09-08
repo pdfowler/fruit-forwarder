@@ -149,6 +149,24 @@ background service health.
 - This refresh was read-only. No HA entry, service, permission, Keychain item,
   configuration, or household data was changed.
 
+### Staged migration and authorization diagnostic (2026-09-08 UTC)
+
+- The 0.1.0 macOS candidate was staged with `--install-only
+  --migrate-home-ctrl`. The copied configuration retained its explicit legacy
+  Keychain service/account and acknowledgement-state paths; the installer did
+  not activate or stop a LaunchAgent.
+- The staged candidate passed `check-config` and `status --json`, including
+  executable ownership and state-file readiness. The legacy service remained
+  the only active writer.
+- A new non-prompting `authorization` helper action now reports Reminders and
+  Calendar permission state separately through `doctor`; a direct source build
+  reported `not_determined` for both services on this Mac. This distinguishes
+  missing permission for the new Fruit Forwarder identity from the legacy
+  helper's `calaccessd` XPC failure, but does not prove a granted or working
+  background permission.
+- No service cutover, permission reset, Keychain rotation, or household-data
+  mutation was performed.
+
 ## Installed acceptance record template
 
 Create one redacted record per run, for example under a maintainer-controlled
