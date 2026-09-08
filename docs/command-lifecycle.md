@@ -22,6 +22,15 @@ and optimistic item state. A successful Mac acknowledgement removes the command
 on the next confirmed snapshot. A bridge outage leaves the last confirmed
 snapshot visible; it must not be presented as newly synchronized.
 
+## Snapshot ordering
+
+Native bridge snapshots include an ISO-8601 `sent_at` timestamp. After the HA
+entry accepts its first timestamped snapshot, it rejects older snapshots and
+untimestamped downgrades, while allowing at most five minutes of future clock
+skew. This prevents a delayed valid webhook replay from replacing newer
+confirmed state. Older protocol peers may send one initial untimestamped
+snapshot, but current bridge releases always send the timestamp.
+
 ## Ambiguous EventKit outcomes
 
 The Mac persists the complete command as `in_flight` before invoking EventKit.

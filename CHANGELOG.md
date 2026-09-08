@@ -20,6 +20,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   reload retries safe after transient setup errors.
 - Reject Home Assistant mutation commands outside the configured list allowlist
   before journaling them as uncertain EventKit operations.
+- Reject delayed or untimestamped Home Assistant snapshot replays after a
+  timestamped bridge sync has been established.
 - Add guarded `task publish:release`, `task publish:hacs`, and `task publish:mcp`
   wrappers with exact-tag and attribution preflight.
 - Preserve signed macOS toolchain metadata when the final release job merges

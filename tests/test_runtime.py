@@ -2,6 +2,7 @@
 
 import asyncio
 from copy import deepcopy
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -77,6 +78,34 @@ async def test_calendar_payload_requires_declared_capability(tmp_path):
     payload["calendars"] = []
     payload["capabilities"] = ["reminders", "command_queue"]
     with pytest.raises(ProtocolError, match="calendar data requires"):
+        await bridge.async_process_snapshot(payload)
+
+
+@pytest.mark.asyncio
+async def test_snapshot_timestamp_rejects_replays_and_downgrades(tmp_path):
+    bridge = runtime(tmp_path)
+    now = datetime.now(UTC)
+    current = snapshot()
+    current["sent_at"] = now.isoformat()
+    await bridge.async_process_snapshot(current)
+    previous = deepcopy(bridge.lists)
+
+    stale = snapshot()
+    stale["sent_at"] = (now - timedelta(seconds=1)).isoformat()
+    with pytest.raises(ProtocolError, match="older than"):
+        await bridge.async_process_snapshot(stale)
+    assert bridge.lists == previous
+
+    with pytest.raises(ProtocolError, match="missing sent_at"):
+        await bridge.async_process_snapshot(snapshot())
+
+
+@pytest.mark.asyncio
+async def test_snapshot_timestamp_rejects_excessive_future_skew(tmp_path):
+    bridge = runtime(tmp_path)
+    payload = snapshot()
+    payload["sent_at"] = (datetime.now(UTC) + timedelta(minutes=6)).isoformat()
+    with pytest.raises(ProtocolError, match="future"):
         await bridge.async_process_snapshot(payload)
 
 

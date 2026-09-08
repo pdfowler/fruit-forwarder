@@ -6,7 +6,7 @@ import asyncio
 from collections.abc import Callable
 from copy import deepcopy
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 import json
 import uuid
 from typing import Any
@@ -62,6 +62,7 @@ class BridgeRuntime:
         self.queue_epoch: str | None = None
         self.last_sync: str | None = None
         self.calendar_last_sync: str | None = None
+        self.last_snapshot_sent_at: datetime | None = None
 
     async def async_load(self) -> None:
         """Restore the last confirmed snapshot and pending commands."""
@@ -74,6 +75,9 @@ class BridgeRuntime:
         ):
             raise ProtocolError("Stored queue epoch is invalid")
         self.queue_epoch = stored_epoch or uuid.uuid4().hex
+        self.last_snapshot_sent_at = _parse_snapshot_sent_at(
+            stored.get("last_snapshot_sent_at")
+        )
         allowed_ids = set(self.entry.data[CONF_ALLOWED_LIST_IDS])
         calendar_ids = set(self.entry.data.get(CONF_ALLOWED_CALENDAR_IDS, []))
         self.calendars = validate_calendars([
@@ -135,7 +139,7 @@ class BridgeRuntime:
         self, payload: dict[str, Any]
     ) -> dict[str, Any]:
         """Validate and store a bridge snapshot, then return queued edits."""
-        lists, applied_ids = self._validate_snapshot(payload)
+        lists, applied_ids, sent_at = self._validate_snapshot(payload)
         try:
             calendars = None
             if "calendars" in payload:
@@ -146,6 +150,20 @@ class BridgeRuntime:
         async with self._transaction():
             if self.queue_epoch is None:
                 self.queue_epoch = uuid.uuid4().hex
+            if sent_at is None and self.last_snapshot_sent_at is not None:
+                raise ProtocolError(
+                    "Snapshot is missing sent_at after timestamped sync was established"
+                )
+            if (
+                sent_at is not None
+                and self.last_snapshot_sent_at is not None
+                and sent_at < self.last_snapshot_sent_at
+            ):
+                raise ProtocolError(
+                    "Snapshot sent_at is older than the last accepted snapshot"
+                )
+            if sent_at is not None:
+                self.last_snapshot_sent_at = sent_at
             if calendars is not None:
                 self.calendars = calendars
                 self.calendar_last_sync = datetime.now(UTC).isoformat()
@@ -223,13 +241,16 @@ class BridgeRuntime:
 
     def _validate_snapshot(
         self, payload: dict[str, Any]
-    ) -> tuple[list[dict[str, Any]], set[str]]:
+    ) -> tuple[list[dict[str, Any]], set[str], datetime | None]:
         if not isinstance(payload, dict):
             raise ProtocolError("JSON body must be an object")
         if payload.get("version") != PROTOCOL_VERSION:
             raise ProtocolError("Unsupported bridge protocol version")
         if payload.get("bridge_id") != self.entry.data[CONF_BRIDGE_ID]:
             raise ProtocolError("Bridge identifier does not match this entry")
+        sent_at = _parse_snapshot_sent_at(payload.get("sent_at"))
+        if sent_at is not None and sent_at > datetime.now(UTC) + timedelta(minutes=5):
+            raise ProtocolError("Snapshot sent_at is too far in the future")
         _validate_capabilities(payload.get("capabilities"), payload)
         raw_lists = payload.get("lists")
         if not isinstance(raw_lists, list) or len(raw_lists) > MAX_LISTS:
@@ -277,7 +298,7 @@ class BridgeRuntime:
             raise ProtocolError("applied_command_ids must be a bounded array of strings")
         if any(not item.strip() or len(item) > 256 for item in applied):
             raise ProtocolError("applied command identifiers must be non-empty and bounded")
-        return validated, set(applied)
+        return validated, set(applied), sent_at
 
     def _apply_optimistic(self, command: dict[str, Any]) -> None:
         reminder_list = self.lists[command["list_id"]]
@@ -304,12 +325,30 @@ class BridgeRuntime:
     async def _transaction(self):
         """Publish mutations only after storage succeeds; rollback failed saves."""
         async with self._lock:
-            previous = deepcopy((self.lists, self.commands, self.queue_epoch, self.last_sync, self.calendars, self.calendar_last_sync))
+            previous = deepcopy(
+                (
+                    self.lists,
+                    self.commands,
+                    self.queue_epoch,
+                    self.last_sync,
+                    self.calendars,
+                    self.calendar_last_sync,
+                    self.last_snapshot_sent_at,
+                )
+            )
             try:
                 yield
                 await self._async_save()
             except BaseException:
-                self.lists, self.commands, self.queue_epoch, self.last_sync, self.calendars, self.calendar_last_sync = previous
+                (
+                    self.lists,
+                    self.commands,
+                    self.queue_epoch,
+                    self.last_sync,
+                    self.calendars,
+                    self.calendar_last_sync,
+                    self.last_snapshot_sent_at,
+                ) = previous
                 raise
 
     async def _async_save(self) -> None:
@@ -321,6 +360,11 @@ class BridgeRuntime:
                 "queue_epoch": self.queue_epoch,
                 "last_sync": self.last_sync,
                 "calendar_last_sync": self.calendar_last_sync,
+                "last_snapshot_sent_at": (
+                    self.last_snapshot_sent_at.isoformat()
+                    if self.last_snapshot_sent_at is not None
+                    else None
+                ),
             }
         )
 
@@ -335,6 +379,25 @@ def _required_string(value: dict[str, Any], key: str) -> str:
     if not isinstance(result, str) or not result.strip() or len(result) > MAX_STRING_LENGTH:
         raise ProtocolError(f"{key} must be a non-empty string")
     return result
+
+
+def _parse_snapshot_sent_at(value: Any) -> datetime | None:
+    """Parse an optional bridge timestamp and require an explicit timezone."""
+    if value is None:
+        return None
+    if (
+        not isinstance(value, str)
+        or not value.strip()
+        or len(value) > MAX_STRING_LENGTH
+    ):
+        raise ProtocolError("sent_at must be a bounded timestamp")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as err:
+        raise ProtocolError("sent_at must be an ISO-8601 timestamp") from err
+    if parsed.tzinfo is None:
+        raise ProtocolError("sent_at must include a timezone")
+    return parsed.astimezone(UTC)
 
 
 def _validate_capabilities(raw: Any, payload: dict[str, Any]) -> None:
