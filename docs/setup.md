@@ -111,6 +111,10 @@ Transient Home Assistant failures use bounded exponential retry backoff with
 jitter (capped at 15 minutes); a successful sync returns to the configured
 poll interval.
 
+See [dashboard-examples.md](dashboard-examples.md) for standard Lovelace todo
+and calendar cards. Calendar entities are read-only; calendar scope is
+independently opt-in.
+
 After foreground sync succeeds, enable the background service:
 
 ```sh

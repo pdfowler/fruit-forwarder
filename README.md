@@ -9,6 +9,7 @@ server, and pushes allowlisted data to Home Assistant.
 EventKit permission and reboot recovery still need validation; see the
 [release roadmap](ROADMAP.md). Start with the complete [setup guide](docs/setup.md)
 for Home Assistant and local MCP configuration.
+Standard Lovelace examples are in [docs/dashboard-examples.md](docs/dashboard-examples.md).
 See the [compatibility matrix](docs/compatibility.md) for the current support
 claim and [architecture decisions](docs/adr/) for the monorepo and trust-boundary
 choices.
