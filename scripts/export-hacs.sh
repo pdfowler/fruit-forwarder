@@ -70,6 +70,16 @@ import pathlib
 import sys
 
 root = pathlib.Path(sys.argv[1])
+components_root = root / "custom_components"
+components = sorted(
+    path.name for path in components_root.iterdir()
+    if path.is_dir() and not path.name.startswith(".")
+)
+if components != ["icloud_reminders_bridge"]:
+    raise SystemExit(
+        "HACS export must contain exactly one integration: "
+        f"{components}"
+    )
 manifest_path = root / "custom_components" / "icloud_reminders_bridge" / "manifest.json"
 manifest = json.loads(manifest_path.read_text())
 required = {"domain", "documentation", "issue_tracker", "codeowners", "name", "version"}
