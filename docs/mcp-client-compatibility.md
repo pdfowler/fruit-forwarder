@@ -40,6 +40,12 @@ response includes `next_offset`. This keeps completed-history and long event
 windows out of a single model context while preserving deterministic access to
 the full bounded snapshot.
 
+`reminders_update` treats `description` and `due` as patch fields: omit either
+to preserve its current EventKit value, or send an empty string to clear it.
+The title and status are required. Home Assistant supplies the complete current
+item when it queues an update, so its existing full-replacement behavior is
+unchanged.
+
 ## Acceptance record required for a named client
 
 Before adding a client name to the supported matrix, record the exact client
