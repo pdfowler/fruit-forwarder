@@ -159,11 +159,11 @@ background service health.
   executable ownership and state-file readiness. The legacy service remained
   the only active writer.
 - A new non-prompting `authorization` helper action now reports Reminders and
-  Calendar permission state separately through `doctor`; a direct source build
-  reported `not_determined` for both services on this Mac. This distinguishes
-  missing permission for the new Fruit Forwarder identity from the legacy
-  helper's `calaccessd` XPC failure, but does not prove a granted or working
-  background permission.
+  Calendar permission state separately through `doctor`. The staged candidate
+  reports `not_determined` for both services and exits nonzero with an
+  actionable grant message. This distinguishes missing permission for the new
+  Fruit Forwarder identity from the legacy helper's `calaccessd` XPC failure,
+  but does not prove a granted or working background permission.
 - No service cutover, permission reset, Keychain rotation, or household-data
   mutation was performed.
 
