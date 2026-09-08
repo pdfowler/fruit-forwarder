@@ -33,6 +33,30 @@ jobs:
             ${{ runner.temp }}/ha-fruit-forwarder
             dist/ha
 
+  homeassistant-compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: baseline
+            python-version: '3.13'
+            requirements: requirements-test.txt
+          - lane: current
+            python-version: '3.14'
+            requirements: requirements-test-current.txt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: ${{ matrix.requirements }}
+      - name: Install Home Assistant compatibility lane
+        run: pip install -r ${{ matrix.requirements }}
+      - name: Run Home Assistant runtime suite
+        run: python -m pytest -q
+
   macos-build:
     runs-on: macos-latest
     steps:

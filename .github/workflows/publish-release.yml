@@ -25,6 +25,20 @@ jobs:
           name: release-ha
           path: dist/ha
 
+  verify-current-ha:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: pip
+          cache-dependency-path: requirements-test-current.txt
+      - name: Install current Home Assistant compatibility lane
+        run: pip install -r requirements-test-current.txt
+      - name: Run current Home Assistant runtime suite
+        run: python -m pytest -q
+
   prepare-macos:
     runs-on: macos-latest
     env:
@@ -104,7 +118,7 @@ jobs:
 
   publish:
     if: ${{ inputs.confirm == 'PUBLISH' && startsWith(github.ref, 'refs/tags/v') }}
-    needs: [prepare-ha, prepare-macos]
+    needs: [prepare-ha, verify-current-ha, prepare-macos]
     runs-on: ubuntu-latest
     environment: release
     permissions:
