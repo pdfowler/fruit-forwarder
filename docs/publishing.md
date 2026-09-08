@@ -55,12 +55,13 @@ protected GitHub environments):
 task publish:release TAG=v0.1.0 CONFIRM=PUBLISH
 task publish:hacs TAG=v0.1.0 CONFIRM=PUBLISH_HACS HACS_REPOSITORY=pdfowler/ha-fruit-forwarder
 task publish:mcp TAG=v0.1.0 CONFIRM=PUBLISH_MCP \
-  PUBLISHER_URL=https://github.com/modelcontextprotocol/registry/releases/download/VERSION/mcp-publisher_linux_amd64.tar.gz \
+  PUBLISHER_URL=REPLACE_WITH_REVIEWED_OFFICIAL_URL \
   PUBLISHER_SHA256=REPLACE_WITH_REVIEWED_SHA256
 ```
 
 Each wrapper rejects a dirty checkout, a missing tag, a tag that does not point
 at `HEAD`, an incorrect confirmation string, or malformed publication inputs;
+replace both MCP publisher placeholders with the exact reviewed URL and hash;
 the wrappers do not hold or transmit release credentials.
 
 After the GitHub release exists:
