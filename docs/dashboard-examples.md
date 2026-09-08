@@ -62,5 +62,6 @@ configured calendar window is rejected rather than presented as complete data.
   Apple-level permission boundary.
 - For a reminders-only setup, omit the calendar card and leave the calendar
   scope empty. Calendar access is independently opt-in.
-- For stale or pending changes, follow the recovery and health guidance in
+- For stale or pending changes, inspect `sync_status`, `sync_age_seconds`, and
+  `pending_commands`, then follow the recovery and health guidance in
   [setup.md](setup.md) and [command-lifecycle.md](command-lifecycle.md).

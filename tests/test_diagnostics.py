@@ -35,6 +35,8 @@ async def test_diagnostics_exclude_household_data_and_credentials(tmp_path):
     assert result["runtime"]["list_count"] == 1
     assert result["runtime"]["item_count"] == 1
     assert result["runtime"]["pending_command_count"] == 1
+    assert result["runtime"]["sync_status"] == "confirmed"
+    assert result["runtime"]["calendar_sync_status"] == "unknown"
     for secret in (
         "secret-token",
         "secret-list-id",

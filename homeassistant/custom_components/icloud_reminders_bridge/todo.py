@@ -46,7 +46,9 @@ class ICloudReminderTodoEntity(TodoListEntity):
     """An editable, deletion-disabled view of one EventKit reminder list."""
 
     _attr_has_entity_name = True
-    _attr_should_poll = False
+    # Poll only local freshness; the bridge still pushes snapshots through its
+    # webhook, so this does not create an EventKit or network polling loop.
+    _attr_should_poll = True
     _writable_features = (
         TodoListEntityFeature.CREATE_TODO_ITEM
         | TodoListEntityFeature.UPDATE_TODO_ITEM
@@ -74,6 +76,8 @@ class ICloudReminderTodoEntity(TodoListEntity):
         """Expose operational health without exposing item contents."""
         return {
             "last_sync": self._runtime.last_sync,
+            "sync_status": self._runtime.snapshot_status(),
+            "sync_age_seconds": self._runtime.snapshot_age_seconds(),
             "pending_commands": sum(
                 command.get("list_id") == self._list_id
                 for command in self._runtime.commands
@@ -85,7 +89,9 @@ class ICloudReminderTodoEntity(TodoListEntity):
     def async_refresh_from_runtime(self, write_state: bool = True) -> None:
         """Adopt the latest EventKit-confirmed or optimistic state."""
         reminder_list = self._runtime.lists.get(self._list_id)
-        self._attr_available = reminder_list is not None
+        self._attr_available = (
+            reminder_list is not None and not self._runtime.snapshot_is_stale()
+        )
         if reminder_list is not None:
             self._attr_name = reminder_list["name"]
         self._attr_supported_features = (
@@ -100,6 +106,10 @@ class ICloudReminderTodoEntity(TodoListEntity):
         )
         if write_state and self.hass is not None:
             self.async_write_ha_state()
+
+    async def async_update(self) -> None:
+        """Refresh freshness locally even when the bridge is offline."""
+        self.async_refresh_from_runtime()
 
     async def async_create_todo_item(self, item: TodoItem) -> None:
         """Queue creation for the macOS bridge and expose it optimistically."""

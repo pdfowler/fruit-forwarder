@@ -20,7 +20,9 @@ mutation but before the acknowledgement is durable.
 HA exposes queued work through the todo entity's `pending_commands` attribute
 and optimistic item state. A successful Mac acknowledgement removes the command
 on the next confirmed snapshot. A bridge outage leaves the last confirmed
-snapshot visible; it must not be presented as newly synchronized.
+snapshot visible with `sync_status: stale` after ten minutes; reminder and
+calendar entities then become unavailable independently until a fresh snapshot
+arrives.
 
 ## Snapshot ordering
 

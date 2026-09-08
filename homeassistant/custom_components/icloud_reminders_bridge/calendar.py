@@ -34,7 +34,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 class BridgeCalendar(CalendarEntity):
     _attr_has_entity_name = True
-    _attr_should_poll = False
+    # Poll only local freshness; event data still arrives through the bridge
+    # snapshot and is never fetched by Home Assistant.
+    _attr_should_poll = True
     _attr_supported_features = 0
 
     def __init__(self, runtime, uid):
@@ -45,15 +47,26 @@ class BridgeCalendar(CalendarEntity):
 
     @property
     def available(self):
-        return self.uid in self.runtime.calendars
+        return self.uid in self.runtime.calendars and not self.runtime.snapshot_is_stale(
+            calendar=True
+        )
 
     @property
     def extra_state_attributes(self):
         calendar = self.runtime.calendars.get(self.uid, {})
-        return {"window_start": calendar.get("window_start"),
-                "window_end": calendar.get("window_end"),
-                "last_sync": self.runtime.last_sync,
-                "calendar_last_sync": self.runtime.calendar_last_sync}
+        return {
+            "window_start": calendar.get("window_start"),
+            "window_end": calendar.get("window_end"),
+            "last_sync": self.runtime.last_sync,
+            "calendar_last_sync": self.runtime.calendar_last_sync,
+            "sync_status": self.runtime.snapshot_status(calendar=True),
+            "sync_age_seconds": self.runtime.snapshot_age_seconds(calendar=True),
+        }
+
+    async def async_update(self) -> None:
+        """Refresh freshness locally even when the bridge is offline."""
+        if self.hass:
+            self.async_write_ha_state()
 
     def _events(self):
         result = []

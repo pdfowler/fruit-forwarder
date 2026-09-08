@@ -1,5 +1,7 @@
 """Todo entity capability and mutation-boundary tests."""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 
 from homeassistant.components.todo import TodoItem
@@ -36,6 +38,7 @@ async def test_writable_list_exposes_mutation_features(tmp_path):
     entity = ICloudReminderTodoEntity(bridge, "allowed")
 
     assert entity.supported_features & TodoListEntityFeature.CREATE_TODO_ITEM
+    assert entity.should_poll
     await entity.async_create_todo_item(
         TodoItem(summary="Queued", status=TodoItemStatus.NEEDS_ACTION)
     )
@@ -56,3 +59,15 @@ async def test_renamed_list_updates_friendly_name_without_changing_identity(tmp_
 
     assert entity.name == "Renamed Tasks"
     assert entity.unique_id == unique_id
+
+
+@pytest.mark.asyncio
+async def test_list_becomes_unavailable_when_snapshot_is_stale(tmp_path):
+    bridge = runtime(tmp_path)
+    await bridge.async_process_snapshot(snapshot())
+    entity = ICloudReminderTodoEntity(bridge, "allowed")
+    bridge.last_sync = (datetime.now(UTC) - timedelta(minutes=11)).isoformat()
+    entity.async_refresh_from_runtime(write_state=False)
+
+    assert not entity.available
+    assert entity.extra_state_attributes["sync_status"] == "stale"

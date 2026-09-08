@@ -1,5 +1,5 @@
 from copy import deepcopy
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from homeassistant.exceptions import HomeAssistantError
@@ -30,6 +30,7 @@ async def test_calendar_snapshot_entity_and_restart(tmp_path):
     assert events[0].all_day
     assert events[0].end.isoformat() == "2026-02-02"
     assert entity.supported_features == 0
+    assert entity.should_poll
     with pytest.raises(HomeAssistantError):
         await entity.async_get_events(bridge.hass,
             datetime(2025, 1, 1, tzinfo=UTC), datetime(2026, 2, 3, tzinfo=UTC))
@@ -88,6 +89,18 @@ async def test_renamed_calendar_updates_friendly_name_without_changing_identity(
 
     assert entity.name == "Renamed Events"
     assert entity.unique_id == unique_id
+
+
+@pytest.mark.asyncio
+async def test_calendar_becomes_unavailable_when_calendar_snapshot_is_stale(tmp_path):
+    bridge = runtime(tmp_path)
+    bridge.entry.data["allowed_calendar_ids"] = ["events"]
+    await bridge.async_process_snapshot(calendar_payload())
+    entity = BridgeCalendar(bridge, "events")
+    bridge.calendar_last_sync = (datetime.now(UTC) - timedelta(minutes=11)).isoformat()
+
+    assert not entity.available
+    assert entity.extra_state_attributes["sync_status"] == "stale"
 
 
 def test_calendar_validation_bounds_identifiers_and_text():

@@ -32,6 +32,10 @@ async def async_get_config_entry_diagnostics(
             "calendar_count": len(runtime.calendars),
             "pending_command_count": len(runtime.commands),
             "last_sync": runtime.last_sync,
+            "sync_status": runtime.snapshot_status(),
+            "sync_age_seconds": runtime.snapshot_age_seconds(),
             "calendar_last_sync": runtime.calendar_last_sync,
+            "calendar_sync_status": runtime.snapshot_status(calendar=True),
+            "calendar_sync_age_seconds": runtime.snapshot_age_seconds(calendar=True),
         },
     }

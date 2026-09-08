@@ -30,6 +30,7 @@ from .const import (
     MAX_COMMANDS,
     MAX_STRING_LENGTH,
     PROTOCOL_VERSION,
+    SNAPSHOT_STALE_AFTER_SECONDS,
 )
 from .calendar_data import validate_calendars
 
@@ -134,6 +135,33 @@ class BridgeRuntime:
                 self._listeners.remove(listener)
 
         return remove_listener
+
+    def snapshot_age_seconds(self, *, calendar: bool = False) -> int | None:
+        """Return the age of the last successful capability snapshot."""
+        raw = self.calendar_last_sync if calendar else self.last_sync
+        if not isinstance(raw, str) or not raw:
+            return None
+        try:
+            timestamp = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if timestamp.tzinfo is None:
+            return None
+        return max(
+            0,
+            int((datetime.now(UTC) - timestamp.astimezone(UTC)).total_seconds()),
+        )
+
+    def snapshot_status(self, *, calendar: bool = False) -> str:
+        """Return confirmed, stale, or unknown freshness for one capability."""
+        age = self.snapshot_age_seconds(calendar=calendar)
+        if age is None:
+            return "unknown"
+        return "stale" if age > SNAPSHOT_STALE_AFTER_SECONDS else "confirmed"
+
+    def snapshot_is_stale(self, *, calendar: bool = False) -> bool:
+        """Fail closed when a capability has no recent successful snapshot."""
+        return self.snapshot_status(calendar=calendar) != "confirmed"
 
     async def async_process_snapshot(
         self, payload: dict[str, Any]
