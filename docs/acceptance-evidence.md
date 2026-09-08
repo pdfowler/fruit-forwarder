@@ -199,6 +199,17 @@ background service health.
   does not substitute for disposable real-account mutation or independent MCP
   client acceptance.
 
+### Home Assistant freshness candidate refresh (2026-09-08 UTC)
+
+- HA reminder and calendar entities now locally poll only their freshness
+  metadata while continuing to receive all item/event data through the webhook.
+  After ten minutes without a successful capability snapshot, the affected
+  entity becomes unavailable and exposes `sync_status: stale` plus its snapshot
+  age; reminder and calendar freshness are tracked independently.
+- Synthetic HA coverage verifies stale reminder and calendar availability,
+  diagnostics fields, and the local polling contract. This does not replace a
+  live HA outage/recovery run against the installed custom component.
+
 ## Installed acceptance record template
 
 Create one redacted record per run, for example under a maintainer-controlled
