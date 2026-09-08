@@ -81,6 +81,7 @@ STAGE_BRIDGE="${BIN_DIR}/.rollback-icloud-reminders-bridge.new"
 STAGE_EVENTKIT="${BIN_DIR}/.rollback-icloud-reminders-eventkit.new"
 install -m 0755 "${backup}/icloud-reminders-bridge" "${STAGE_BRIDGE}"
 install -m 0755 "${backup}/icloud-reminders-eventkit" "${STAGE_EVENTKIT}"
+codesign --verify --strict "${STAGE_BRIDGE}"
 codesign --verify --strict "${STAGE_EVENTKIT}"
 mv "${STAGE_BRIDGE}" "${BRIDGE_BIN}"
 if ! mv "${STAGE_EVENTKIT}" "${EVENTKIT_BIN}"; then

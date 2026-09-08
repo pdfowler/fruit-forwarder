@@ -38,3 +38,11 @@ def test_package_installer_verifies_both_native_executables():
 def test_package_installer_bundles_launchagent_renderer():
     package_script = (ROOT / "scripts/package-macos.sh").read_text()
     assert 'scripts/render-launchagent.py' in package_script
+
+
+def test_rollback_verifies_both_native_executables():
+    rollback = (ROOT / "scripts/rollback-macos.sh").read_text()
+    bridge = rollback.index('codesign --verify --strict "${STAGE_BRIDGE}"')
+    helper = rollback.index('codesign --verify --strict "${STAGE_EVENTKIT}"')
+    switch = rollback.index('mv "${STAGE_BRIDGE}" "${BRIDGE_BIN}"')
+    assert bridge < helper < switch
