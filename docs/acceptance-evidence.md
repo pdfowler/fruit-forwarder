@@ -285,9 +285,20 @@ launchd/process lifecycle check on a signed macOS installation.
   exact versioned GitHub release URL containing `mcp`, `registryType: "mcpb"`,
   `stdio` transport, and the candidate artifact SHA-256. The package validator
   now checks each of these fields before release preparation succeeds.
-- The MCP Registry remains a preview service, so namespace and package rules
-  must be rechecked immediately before the first authorized publication. No
-  public repository, release, HACS listing, or Registry entry exists yet.
+- The public source repository and `v0.1.0` release are available at
+  `https://github.com/pdfowler/fruit-forwarder/releases/tag/v0.1.0`; all retained
+  commits pass the `pfowler@icloud.com` attribution check and the source CI run
+  for the final metadata revision passed.
+- The generated Home Assistant distribution is published at
+  `https://github.com/pdfowler/ha-fruit-forwarder/releases/tag/v0.1.0`. Its HACS
+  and Hassfest validation runs passed, and its repository has the required
+  description, topics, enabled issues, brand assets, and full release. It is
+  ready to use as a custom repository; default-catalog inclusion is not claimed.
+- The MCP Registry publication workflow completed successfully as run
+  `34249548695`. The official Registry reports
+  `io.github.pdfowler/fruit-forwarder` version `0.1.0` as active/latest, with
+  the versioned MCPB URL and matching SHA-256. The Registry remains a preview
+  service, so its schema and package rules must be rechecked for future releases.
 
 ## Installed acceptance record template
 

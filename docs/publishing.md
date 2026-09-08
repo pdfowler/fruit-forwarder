@@ -141,3 +141,18 @@ References: [HACS integration requirements](https://hacs.xyz/docs/publish/integr
 [MCP Registry package types](https://modelcontextprotocol.io/registry/package-types),
 [MCP Registry authentication](https://modelcontextprotocol.io/registry/authentication),
 and [MCP Registry GitHub Actions](https://modelcontextprotocol.io/registry/github-actions).
+
+## Publication record for 0.1.0
+
+The maintainer-approved `v0.1.0` publication is complete for the unsigned,
+ad-hoc-tested candidate:
+
+- Source release: <https://github.com/pdfowler/fruit-forwarder/releases/tag/v0.1.0>
+- Home Assistant distribution: <https://github.com/pdfowler/ha-fruit-forwarder/releases/tag/v0.1.0>
+- MCP Registry: `io.github.pdfowler/fruit-forwarder` version `0.1.0`, active/latest
+- MCP publication workflow: GitHub Actions run `34249548695`
+
+This record does not claim Developer ID signing, notarization, a clean
+background LaunchAgent/EventKit lifecycle, or inclusion in HACS's default
+catalog. Those remain separate acceptance or maintainer-review gates for a
+future release.
