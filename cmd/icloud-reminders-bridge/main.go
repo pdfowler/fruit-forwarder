@@ -245,6 +245,11 @@ func recoverCommand(cfg *config.Config, commandID, resolution string) error {
 	if resolution != "applied" && resolution != "retry" {
 		return errors.New("recover requires --resolution applied or retry")
 	}
+	releaseLock, err := state.Acquire(cfg.StatePath + ".lock")
+	if err != nil {
+		return fmt.Errorf("acquire bridge state lock: %w", err)
+	}
+	defer releaseLock()
 	bridgeState, err := state.Load(cfg.StatePath)
 	if err != nil {
 		return fmt.Errorf("load acknowledgement state: %w", err)

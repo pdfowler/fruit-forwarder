@@ -196,6 +196,24 @@ func TestRecoverCommandRejectsMissingResolution(t *testing.T) {
 	}
 }
 
+func TestRecoverCommandRespectsStateLock(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	if err := (&state.State{InFlight: &model.Command{
+		ID: "command-1", Action: "create", ListID: "list-1",
+		Item: model.Item{Summary: "Task"},
+	}}).Save(path); err != nil {
+		t.Fatal(err)
+	}
+	release, err := state.Acquire(path + ".lock")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	if err := recoverCommand(&config.Config{StatePath: path}, "command-1", "retry"); err == nil || !strings.Contains(err.Error(), "state lock") {
+		t.Fatalf("recover ignored the state lock: %v", err)
+	}
+}
+
 func TestResetQueueEpochRequiresExplicitSafeState(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 	if err := (&state.State{}).Save(path); err != nil {
