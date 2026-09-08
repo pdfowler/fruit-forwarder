@@ -78,6 +78,7 @@ done
   echo "package is missing executable bridge files" >&2
   exit 2
 }
+codesign --verify --strict "${PACKAGE_BRIDGE}"
 codesign --verify --strict "${PACKAGE_EVENTKIT}"
 VERSION="$("${PACKAGE_BRIDGE}" version)"
 [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]] || {

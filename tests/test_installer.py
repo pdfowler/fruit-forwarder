@@ -28,6 +28,13 @@ def test_package_installer_validates_config_before_switching_binaries():
     assert validation < switch
 
 
+def test_package_installer_verifies_both_native_executables():
+    bridge = INSTALLER.index('codesign --verify --strict "${PACKAGE_BRIDGE}"')
+    helper = INSTALLER.index('codesign --verify --strict "${PACKAGE_EVENTKIT}"')
+    switch = INSTALLER.index('mv "${STAGE_BRIDGE}" "${BRIDGE_BIN}"')
+    assert bridge < helper < switch
+
+
 def test_package_installer_bundles_launchagent_renderer():
     package_script = (ROOT / "scripts/package-macos.sh").read_text()
     assert 'scripts/render-launchagent.py' in package_script
