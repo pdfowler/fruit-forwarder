@@ -303,6 +303,16 @@ launchd/process lifecycle check on a signed macOS installation.
   the versioned MCPB URL and matching SHA-256. The Registry remains a preview
   service, so its schema and package rules must be rechecked for future releases.
 
+### Maintainer publication decision (2026-09-08 UTC)
+
+The maintainer explicitly published `0.1.0` as a preview/early release with
+claims narrowed to the recorded foreground/manual EventKit path, the verified
+live Home Assistant installation, and the packaged local MCP/Registry shape.
+The release does not claim a healthy background LaunchAgent, independent
+MCP-client installation, Developer ID signing, notarization, or HACS default
+catalog inclusion. Those limits remain in the compatibility matrix, setup
+guide, release notes, and publication record.
+
 ## Installed acceptance record template
 
 Create one redacted record per run, for example under a maintainer-controlled
