@@ -23,7 +23,7 @@ jobs:
     environment: hacs-release
     steps:
       - name: Check out the tagged source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -44,7 +44,7 @@ jobs:
           scripts/export-hacs.sh "$RUNNER_TEMP/ha-fruit-forwarder"
 
       - name: Check out the HACS distribution repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.hacs_repository }}
           token: ${{ secrets.HACS_REPO_TOKEN }}
