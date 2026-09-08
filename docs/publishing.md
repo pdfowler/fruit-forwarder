@@ -49,7 +49,9 @@ After the GitHub release exists:
   closed instead of being silently overwritten. It does not publish from a
   branch or a dirty checkout.
 - Submit the HACS repository first as a custom repository, then request default
-  catalog inclusion once the required release and validation checks are live.
+  catalog inclusion only after the public repository has its description,
+  topics, enabled issues, a full release, passing HACS and Hassfest actions,
+  and the matching Home Assistant Brands entry/PR.
 - Run the guarded `Publish MCP Registry metadata` workflow from the matching
   version tag after configuring the protected `mcp-release` environment. Type
   `PUBLISH_MCP`, and provide the exact official `mcp-publisher` Linux amd64
@@ -61,14 +63,16 @@ After the GitHub release exists:
   clean MCP client can fetch and install the exact artifact.
 
 The current official MCP Registry package guidance supports `registryType:
-"mcpb"` entries that point to a versioned GitHub or GitLab release asset and
-carry its `fileSha256`; the registry stores metadata rather than the MCPB
-bytes. The generated `server.json` follows that package shape. HACS requires a
-public GitHub repository with one integration under `custom_components/`, the
-required manifest keys, brand assets, passing HACS and Hassfest actions, and at
-least one full release before default-catalog submission. Recheck the upstream
+"mcpb"` entries that point to a versioned GitHub or GitLab release asset,
+contain `mcp` in the package URL, and carry its `fileSha256`; the registry
+stores metadata rather than the MCPB bytes. The generated `server.json` follows
+that package shape. HACS requires a public GitHub repository with one
+integration under `custom_components/`, the required manifest keys, brand
+assets, passing HACS and Hassfest actions, and at least one full release before
+default-catalog submission; repository description/topics/issues and the
+Home Assistant Brands entry are also publication checks. Recheck the upstream
 requirements during the final publication review because both ecosystems are
-independently maintained. See the [MCPB package guidance](https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/package-types.mdx), [HACS integration requirements](https://hacs.xyz/docs/publish/integration/), and [HACS default-repository requirements](https://hacs.xyz/docs/publish/include/) during that review.
+independently maintained. See the [MCPB package guidance](https://modelcontextprotocol.io/registry/package-types), [MCP Registry authentication guidance](https://modelcontextprotocol.io/registry/authentication), [HACS integration requirements](https://hacs.xyz/docs/publish/integration/), and [HACS default-repository requirements](https://hacs.xyz/docs/publish/include/) during that review.
 
 The confirmed GitHub release workflow reconstructs and verifies the unified
 manifest after the HA and macOS artifacts have been merged. A manifest from a
