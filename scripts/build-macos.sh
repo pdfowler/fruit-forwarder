@@ -5,6 +5,7 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 version="${1:-$(tr -d '[:space:]' < "${repo_dir}/release/VERSION")}"
 output_dir="${2:-${repo_dir}/dist/build/macos-${version}}"
 bridge_name="${3:-icloud-reminders-bridge}"
+sign_identity="${FRUIT_FORWARDER_SIGN_IDENTITY:--}"
 
 if [[ "${OSTYPE:-}" != darwin* ]]; then
   echo "macOS builds require Darwin" >&2
@@ -40,11 +41,20 @@ go build -trimpath -ldflags "-X main.version=${version}" \
   -o "${output_dir}/bin/${bridge_name}" \
   "${repo_dir}/cmd/icloud-reminders-bridge"
 
+codesign_options=(--force --sign "${sign_identity}" --options runtime)
+if [[ "${sign_identity}" != "-" ]]; then
+  codesign_options+=(--timestamp)
+fi
+codesign "${codesign_options[@]}" \
+  --identifier com.pdfowler.fruitforwarder \
+  "${output_dir}/bin/${bridge_name}"
+codesign --verify --strict "${output_dir}/bin/${bridge_name}"
+
 swiftc -O -parse-as-library "${repo_dir}/eventkit-helper/main.swift" \
   -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
   -Xlinker "${repo_dir}/deployment/eventkit-helper-Info.plist" \
   -o "${output_dir}/bin/icloud-reminders-eventkit"
-codesign --force --sign - --options runtime \
+codesign "${codesign_options[@]}" \
   --identifier com.pdfowler.fruitforwarder.eventkit \
   --entitlements "${repo_dir}/deployment/reminders.entitlements" \
   "${output_dir}/bin/icloud-reminders-eventkit"

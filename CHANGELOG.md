@@ -14,6 +14,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   accidental destination repositories.
 - Add a public-facing support policy with compatibility, redaction, and security
   reporting boundaries.
+- Sign both native executables through the shared build path and record the
+  selected macOS signing identity in release provenance.
 - Align the Go module path with the planned public `fruit-forwarder`
   repository so downstream builds and release metadata use one canonical
   source identity.

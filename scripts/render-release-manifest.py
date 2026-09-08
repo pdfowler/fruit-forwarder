@@ -76,6 +76,7 @@ def main() -> None:
         },
         "package_tools": {
             "mcpb_cli": os.environ.get("MCPB_VERSION", "2.1.2"),
+            "macos_codesign_identity": os.environ.get("FRUIT_FORWARDER_SIGN_IDENTITY", "-"),
         },
         "source_revision": subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=root, text=True

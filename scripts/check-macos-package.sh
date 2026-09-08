@@ -29,6 +29,7 @@ required = {
     root + "config.example.json",
     root + "README.md",
     root + "CHANGELOG.md",
+    root + "SUPPORT.md",
     root + "LICENSE",
     root + "deployment/com.pdfowler.fruitforwarder.plist.tmpl",
     root + "scripts/install-package-macos.sh",

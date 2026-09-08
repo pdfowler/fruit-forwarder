@@ -25,6 +25,10 @@ Before running it:
    versions, and MCPB package-tool version used for that candidate. The
    manifest verifier rechecks the recorded source revision, artifact paths,
    sizes, and hashes before publication.
+   The default local candidate uses ad-hoc code signing for boundary tests;
+   a publishable macOS release must set `FRUIT_FORWARDER_SIGN_IDENTITY` to the
+   maintainer-controlled Developer ID identity and complete the separate
+   notarization/release review before publication.
 4. Complete the real Mac/HA/MCP acceptance matrix in `PROJECT-PLAN.md`,
    using the redacted ledger in [acceptance-evidence.md](acceptance-evidence.md),
    including disposable reminders/calendars and rollback evidence.
