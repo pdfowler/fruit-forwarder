@@ -126,7 +126,7 @@ jobs:
           scripts/check-git-attribution.sh
       - name: Rebuild and verify the unified release manifest
         run: |
-          python3 scripts/render-release-manifest.py
+          python3 scripts/render-release-manifest.py --base-manifest dist/release-manifest.json
           scripts/check-release-manifest.py
       - name: Create GitHub release with immutable candidate assets
         env:
