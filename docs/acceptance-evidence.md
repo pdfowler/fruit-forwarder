@@ -49,9 +49,10 @@ be paired with the installed acceptance records below.
 ### Canonical repository candidate rebuild (2026-09-07)
 
 - `task check` and `task release:prepare` passed from the clean source revision
-  `3ccba608b4e8f1353e368e16b888a176b31100bd` after the Go module path was
+  `8f94f72c1ebfab2b6d850f4d0f5c7f924cffb08f` after the Go module path was
   aligned with the planned public `github.com/pdfowler/fruit-forwarder`
-  repository and the Home Assistant config-flow scope bounds were hardened.
+  repository, the Home Assistant config-flow scope bounds were hardened, and
+  the guarded publication task surface was added.
 - The manifest records `source_dirty: false` and eight verified outputs: the
   HACS export and archive, macOS archive, MCPB and checksum sidecars, MCP
   Registry metadata, and the unified release manifest.

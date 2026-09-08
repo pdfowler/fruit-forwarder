@@ -178,7 +178,7 @@ The current repository uses the existing top-level directories rather than perfo
 | `task check` | Formatting, static checks and protocol/metadata validation; no deployment |
 | `task test` | Go, HA and native tests supported by the current host; clearly report unavailable host-specific suites |
 | `task build:macos` | Shared Go/native build on macOS; ad-hoc signed staged artifacts by default, with optional Developer ID identity |
-| `task package:macos` | Validated build → configured signing/notarization → versioned Mac distribution |
+| `task package:macos` | Validated build → configured code signing → versioned Mac distribution; notarization remains an explicit publication gate |
 | `task package:mcp` | Same native engine/build revision → supported MCP install package and metadata |
 | `task package:ha` | HA validation → deterministic HACS repository tree and optional release archive |
 | `task release:check` | Verify all selected artifacts, versions, hashes, compatibility and source provenance |
