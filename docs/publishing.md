@@ -26,9 +26,15 @@ Before running it:
    manifest verifier rechecks the recorded source revision, artifact paths,
    sizes, and hashes before publication.
    The default local candidate uses ad-hoc code signing for boundary tests;
-   a publishable macOS release must set `FRUIT_FORWARDER_SIGN_IDENTITY` to the
-   maintainer-controlled Developer ID identity and complete the separate
-   notarization/release review before publication.
+   a publishable macOS release must set the protected
+   `FRUIT_FORWARDER_SIGN_IDENTITY` Actions variable to the maintainer-controlled
+   Developer ID identity. The workflow imports the corresponding base64-encoded
+   `.p12` certificate into an ephemeral keychain using the protected secrets
+   `FRUIT_FORWARDER_DEVELOPER_ID_CERTIFICATE_BASE64`,
+   `FRUIT_FORWARDER_DEVELOPER_ID_CERTIFICATE_PASSWORD`, and
+   `FRUIT_FORWARDER_SIGNING_KEYCHAIN_PASSWORD`, then verifies the identity
+   before building. Complete the separate notarization/release review before
+   publication; the current tarball/MCPB workflow does not claim notarization.
 4. Complete the real Mac/HA/MCP acceptance matrix in `PROJECT-PLAN.md`,
    using the redacted ledger in [acceptance-evidence.md](acceptance-evidence.md),
    including disposable reminders/calendars and rollback evidence.
@@ -37,8 +43,8 @@ Before running it:
 6. Run the workflow only after the protected environment reviewer approves the
    exact source revision and version. The guarded public-release workflow also
    fails closed unless the macOS job has a maintainer-selected repository or
-   organization `FRUIT_FORWARDER_SIGN_IDENTITY` Actions variable and the corresponding
-   Developer ID certificate is installed on the runner; the ordinary release
+   organization `FRUIT_FORWARDER_SIGN_IDENTITY` Actions variable and the three
+   protected certificate/keychain secrets described above. The ordinary release
    preparation workflow remains available for ad-hoc local candidates.
 
 After the GitHub release exists:

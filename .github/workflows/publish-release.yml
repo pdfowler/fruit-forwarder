@@ -28,10 +28,9 @@ jobs:
   prepare-macos:
     runs-on: macos-latest
     env:
-      # Release review must provide a Developer ID identity and install its
-      # certificate on the runner before this workflow is used.
-      # An empty value intentionally falls back to ad-hoc signing in local
-      # preparation, but the guarded publication path rejects that candidate.
+      # Release review must provide a Developer ID identity and the protected
+      # certificate secrets below. Local preparation intentionally falls back
+      # to ad-hoc signing, but the guarded publication path rejects it.
       FRUIT_FORWARDER_SIGN_IDENTITY: ${{ vars.FRUIT_FORWARDER_SIGN_IDENTITY }}
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +44,35 @@ jobs:
         run: |
           test -n "${FRUIT_FORWARDER_SIGN_IDENTITY}"
           test "${FRUIT_FORWARDER_SIGN_IDENTITY}" != "-"
+      - name: Import the Developer ID certificate into an ephemeral keychain
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.FRUIT_FORWARDER_DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.FRUIT_FORWARDER_DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.FRUIT_FORWARDER_SIGNING_KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "${CERTIFICATE_BASE64}"
+          test -n "${CERTIFICATE_PASSWORD}"
+          test -n "${KEYCHAIN_PASSWORD}"
+          keychain="${RUNNER_TEMP}/fruit-forwarder-signing.keychain-db"
+          certificate="${RUNNER_TEMP}/fruit-forwarder-signing.p12"
+          printf '%s' "${CERTIFICATE_BASE64}" | base64 -D > "${certificate}"
+          security create-keychain -p "${KEYCHAIN_PASSWORD}" "${keychain}"
+          security set-keychain-settings -lut 21600 "${keychain}"
+          security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${keychain}"
+          security import "${certificate}" -k "${keychain}" \
+            -P "${CERTIFICATE_PASSWORD}" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          security list-keychains -d user -s "${keychain}"
+          security default-keychain -s "${keychain}"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "${KEYCHAIN_PASSWORD}" "${keychain}"
+          security find-identity -v -p codesigning "${keychain}" | \
+            grep -F "\"${FRUIT_FORWARDER_SIGN_IDENTITY}\""
+          {
+            echo "FRUIT_FORWARDER_KEYCHAIN_PATH=${keychain}"
+            echo "FRUIT_FORWARDER_CERTIFICATE_PATH=${certificate}"
+          } >> "${GITHUB_ENV}"
       - run: scripts/package-macos.sh "$(tr -d '[:space:]' < release/VERSION)"
       - run: scripts/package-mcpb.sh "$(tr -d '[:space:]' < release/VERSION)"
       - name: Render and verify MCP Registry metadata
@@ -63,6 +91,16 @@ jobs:
             dist/macos
             dist/mcp
             dist/release-manifest.json
+      - name: Remove the ephemeral signing keychain
+        if: ${{ always() }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${FRUIT_FORWARDER_KEYCHAIN_PATH:-}" ]]; then
+            security delete-keychain "${FRUIT_FORWARDER_KEYCHAIN_PATH}" >/dev/null 2>&1 || true
+          fi
+          if [[ -n "${FRUIT_FORWARDER_CERTIFICATE_PATH:-}" ]]; then
+            rm -f "${FRUIT_FORWARDER_CERTIFICATE_PATH}"
+          fi
 
   publish:
     if: ${{ inputs.confirm == 'PUBLISH' && startsWith(github.ref, 'refs/tags/v') }}
