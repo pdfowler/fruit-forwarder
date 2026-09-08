@@ -7,6 +7,10 @@ on:
         description: Type PUBLISH to create a GitHub release from fresh artifacts
         required: true
         type: string
+      notarization_review:
+        description: Type APPROVED after the separate Developer ID/notarization review
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -117,7 +121,7 @@ jobs:
           fi
 
   publish:
-    if: ${{ inputs.confirm == 'PUBLISH' && startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ inputs.confirm == 'PUBLISH' && inputs.notarization_review == 'APPROVED' && startsWith(github.ref, 'refs/tags/v') }}
     needs: [prepare-ha, verify-current-ha, prepare-macos]
     runs-on: ubuntu-latest
     environment: release

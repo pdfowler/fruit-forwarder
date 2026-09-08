@@ -144,17 +144,20 @@ tasks:
   publish:release:
     desc: Dispatch the protected GitHub release workflow for an exact tag
     requires:
-      vars: [TAG, CONFIRM]
+      vars: [TAG, CONFIRM, NOTARIZATION_REVIEW]
     env:
       FRUIT_FORWARDER_RELEASE_TAG: "{{.TAG}}"
       FRUIT_FORWARDER_RELEASE_CONFIRM: "{{.CONFIRM}}"
+      FRUIT_FORWARDER_NOTARIZATION_REVIEW: "{{.NOTARIZATION_REVIEW}}"
     cmds:
       - scripts/check-publish-ref.sh
       - |
         test "${FRUIT_FORWARDER_RELEASE_CONFIRM}" = "PUBLISH"
+        test "${FRUIT_FORWARDER_NOTARIZATION_REVIEW}" = "APPROVED"
         gh workflow run publish-release.yml \
           --ref "${FRUIT_FORWARDER_RELEASE_TAG}" \
-          --field confirm=PUBLISH
+          --field confirm=PUBLISH \
+          --field notarization_review=APPROVED
 
   publish:hacs:
     desc: Dispatch the protected HACS distribution workflow for an exact tag

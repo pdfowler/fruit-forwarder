@@ -52,7 +52,7 @@ through the Task wrappers (which still require `gh` authentication and the
 protected GitHub environments):
 
 ```sh
-task publish:release TAG=v0.1.0 CONFIRM=PUBLISH
+task publish:release TAG=v0.1.0 CONFIRM=PUBLISH NOTARIZATION_REVIEW=APPROVED
 task publish:hacs TAG=v0.1.0 CONFIRM=PUBLISH_HACS HACS_REPOSITORY=pdfowler/ha-fruit-forwarder
 task publish:mcp TAG=v0.1.0 CONFIRM=PUBLISH_MCP \
   PUBLISHER_URL=REPLACE_WITH_REVIEWED_OFFICIAL_URL \
