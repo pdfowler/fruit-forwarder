@@ -68,9 +68,12 @@ contain `mcp` in the package URL, and carry its `fileSha256`; the registry
 stores metadata rather than the MCPB bytes. The generated `server.json` follows
 that package shape. HACS requires a public GitHub repository with one
 integration under `custom_components/`, the required manifest keys, brand
-assets, passing HACS and Hassfest actions, and at least one full release before
-default-catalog submission; repository description/topics/issues and the
-Home Assistant Brands entry are also publication checks. Recheck the upstream
+  assets, passing HACS and Hassfest actions, and at least one full release before
+  default-catalog submission; repository description/topics/issues and the
+  Home Assistant brand policy are also publication checks. The generated
+  integration includes a component-local `brand/icon.png` for current HA's
+  local brand proxy and a root `brand/icon.png` for HACS/legacy validation.
+  Recheck the upstream
 requirements during the final publication review because both ecosystems are
 independently maintained. See the [MCPB package guidance](https://modelcontextprotocol.io/registry/package-types), [MCP Registry authentication guidance](https://modelcontextprotocol.io/registry/authentication), [HACS integration requirements](https://hacs.xyz/docs/publish/integration/), and [HACS default-repository requirements](https://hacs.xyz/docs/publish/include/) during that review.
 

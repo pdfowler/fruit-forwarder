@@ -80,6 +80,8 @@ if manifest["domain"] != "icloud_reminders_bridge":
     raise SystemExit("unexpected integration domain")
 if not (root / "brand" / "icon.png").is_file():
     raise SystemExit("brand/icon.png is required for HACS export")
+if not (root / "custom_components" / "icloud_reminders_bridge" / "brand" / "icon.png").is_file():
+    raise SystemExit("component-local brand/icon.png is required for current HA")
 source = json.loads((root / "fruit-forwarder-source.json").read_text())
 if not source.get("source_revision") or len(source["source_revision"]) != 40:
     raise SystemExit("fruit-forwarder-source.json must contain a full source revision")

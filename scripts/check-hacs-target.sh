@@ -33,6 +33,9 @@ if metadata.get("source_repository") != "https://github.com/pdfowler/fruit-forwa
     raise SystemExit("HACS target metadata points at an unexpected source repository")
 if require_clean and metadata.get("source_dirty"):
     raise SystemExit("HACS target was generated from a dirty source tree")
+component_brand = root / "custom_components" / "icloud_reminders_bridge" / "brand" / "icon.png"
+if not component_brand.is_file() or component_brand.is_symlink():
+    raise SystemExit("HACS target has no component-local brand icon")
 expected = metadata.get("export_tree_sha256")
 if not isinstance(expected, str) or len(expected) != 64:
     raise SystemExit("HACS target metadata has no export tree digest")
