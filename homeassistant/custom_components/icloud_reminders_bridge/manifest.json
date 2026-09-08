@@ -4,8 +4,8 @@
   "codeowners": ["@pdfowler"],
   "config_flow": true,
   "documentation": "https://github.com/pdfowler/ha-fruit-forwarder",
-  "issue_tracker": "https://github.com/pdfowler/ha-fruit-forwarder/issues",
   "integration_type": "service",
+  "issue_tracker": "https://github.com/pdfowler/ha-fruit-forwarder/issues",
   "iot_class": "local_push",
   "requirements": [],
   "version": "0.1.0"
