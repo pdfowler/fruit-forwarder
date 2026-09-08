@@ -295,8 +295,9 @@ launchd/process lifecycle check on a signed macOS installation.
   description, topics, enabled issues, brand assets, and full release. It is
   ready to use as a custom repository. Default-catalog PR
   `https://github.com/hacs/default/pull/10771` is open; its JSON/schema/sorted
-  checks passed, while the HACS maintainer-controlled `New default repository`
-  label is still required before the gated repository checks can run.
+  checks and all gated repository checks now pass after the HACS maintainer
+  applied the `New default repository` label. The PR remains open for the
+  normal HACS review/merge queue.
 - The MCP Registry publication workflow completed successfully as run
   `34249548695`. The official Registry reports
   `io.github.pdfowler/fruit-forwarder` version `0.1.0` as active/latest, with
