@@ -74,6 +74,17 @@ func (s *protocolStore) Update(_ context.Context, _ string, item model.Item) (*m
 	s.writes.Add(1)
 	return &item, nil
 }
+func (s *protocolStore) UpdatePatch(_ context.Context, _ string, patch model.ItemPatch) (*model.Item, error) {
+	s.writes.Add(1)
+	item := model.Item{UID: patch.UID, Summary: patch.Summary, Status: patch.Status, Description: "preserved", Due: "2026-01-01"}
+	if patch.Description != nil {
+		item.Description = *patch.Description
+	}
+	if patch.Due != nil {
+		item.Due = *patch.Due
+	}
+	return &item, nil
+}
 func (s *protocolStore) SetCompleted(_ context.Context, _ string, uid string, completed bool) (*model.Item, error) {
 	s.writes.Add(1)
 	status := "needs_action"

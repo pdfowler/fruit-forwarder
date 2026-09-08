@@ -313,6 +313,51 @@ func (s *Store) Update(ctx context.Context, listID string, item model.Item) (*mo
 	return s.write(ctx, request{Action: "update", ListID: listID, Item: item})
 }
 
+// UpdatePatch merges optional MCP fields with the current EventKit reminder
+// before issuing one full update. Callers must hold any cross-process lock for
+// the duration of this method when coordinating with another bridge process.
+func (s *Store) UpdatePatch(ctx context.Context, listID string, patch model.ItemPatch) (*model.Item, error) {
+	if strings.TrimSpace(patch.UID) == "" {
+		return nil, errors.New("reminder uid is required")
+	}
+	if strings.TrimSpace(patch.Summary) == "" {
+		return nil, errors.New("summary is required")
+	}
+	if patch.Status != "needs_action" && patch.Status != "completed" {
+		return nil, fmt.Errorf("unsupported reminder status %q", patch.Status)
+	}
+	lists, err := s.Snapshot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var current *model.Item
+	for _, list := range lists {
+		if list.ID != listID {
+			continue
+		}
+		for index := range list.Items {
+			if list.Items[index].UID == patch.UID {
+				candidate := list.Items[index]
+				current = &candidate
+				break
+			}
+		}
+	}
+	if current == nil {
+		return nil, fmt.Errorf("reminder %q is unavailable in list %q", patch.UID, listID)
+	}
+	current.UID = patch.UID
+	current.Summary = patch.Summary
+	current.Status = patch.Status
+	if patch.Description != nil {
+		current.Description = *patch.Description
+	}
+	if patch.Due != nil {
+		current.Due = *patch.Due
+	}
+	return s.Update(ctx, listID, *current)
+}
+
 func (s *Store) SetCompleted(ctx context.Context, listID, uid string, completed bool) (*model.Item, error) {
 	if _, ok := s.allowed[listID]; !ok {
 		return nil, fmt.Errorf("list %q is outside the allowlist", listID)

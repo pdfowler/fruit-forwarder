@@ -40,6 +40,17 @@ type Item struct {
 	Modified    string `json:"modified,omitempty"`
 }
 
+// ItemPatch describes the writable subset of an existing reminder. A nil
+// optional field means preserve the value already held by EventKit; a pointer
+// to an empty string explicitly clears it.
+type ItemPatch struct {
+	UID         string
+	Summary     string
+	Status      string
+	Description *string
+	Due         *string
+}
+
 type List struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`

@@ -59,6 +59,16 @@ func (s *LockedStore) Update(ctx context.Context, listID string, item model.Item
 	return result, err
 }
 
+func (s *LockedStore) UpdatePatch(ctx context.Context, listID string, patch model.ItemPatch) (*model.Item, error) {
+	var result *model.Item
+	err := s.withLock(func() error {
+		var err error
+		result, err = s.Store.UpdatePatch(ctx, listID, patch)
+		return err
+	})
+	return result, err
+}
+
 func (s *LockedStore) SetCompleted(ctx context.Context, listID, uid string, completed bool) (*model.Item, error) {
 	var result *model.Item
 	err := s.withLock(func() error {

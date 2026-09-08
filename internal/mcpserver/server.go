@@ -19,6 +19,10 @@ type ReminderStore interface {
 	SetCompleted(context.Context, string, string, bool) (*model.Item, error)
 }
 
+type PatchStore interface {
+	UpdatePatch(context.Context, string, model.ItemPatch) (*model.Item, error)
+}
+
 type Server struct {
 	store ReminderStore
 }
@@ -50,12 +54,12 @@ type CreateInput struct {
 }
 
 type UpdateInput struct {
-	ListID      string `json:"list_id"`
-	UID         string `json:"uid"`
-	Summary     string `json:"summary"`
-	Description string `json:"description,omitempty"`
-	Due         string `json:"due,omitempty" jsonschema:"RFC3339 due date/time, or empty to clear."`
-	Status      string `json:"status" jsonschema:"needs_action or completed."`
+	ListID      string  `json:"list_id"`
+	UID         string  `json:"uid"`
+	Summary     string  `json:"summary"`
+	Description *string `json:"description,omitempty" jsonschema:"Optional plain-text notes; omit to preserve, or send an empty string to clear."`
+	Due         *string `json:"due,omitempty" jsonschema:"Optional RFC3339 due date/time; omit to preserve, or send an empty string to clear."`
+	Status      string  `json:"status" jsonschema:"needs_action or completed."`
 }
 
 type StatusInput struct {
@@ -146,9 +150,21 @@ func (s *Server) update(ctx context.Context, _ *mcp.CallToolRequest, input Updat
 	if input.Status != "needs_action" && input.Status != "completed" {
 		return nil, ItemOutput{}, errors.New("status must be needs_action or completed")
 	}
-	item, err := s.store.Update(ctx, input.ListID, model.Item{
-		UID: input.UID, Summary: strings.TrimSpace(input.Summary), Description: input.Description, Due: input.Due, Status: input.Status,
-	})
+	var item *model.Item
+	var err error
+	if patchStore, ok := s.store.(PatchStore); ok {
+		item, err = patchStore.UpdatePatch(ctx, input.ListID, model.ItemPatch{
+			UID: input.UID, Summary: strings.TrimSpace(input.Summary),
+			Status: input.Status, Description: input.Description, Due: input.Due,
+		})
+	} else {
+		if input.Description == nil || input.Due == nil {
+			return nil, ItemOutput{}, errors.New("this bridge does not support omitted update fields; provide description and due")
+		}
+		item, err = s.store.Update(ctx, input.ListID, model.Item{
+			UID: input.UID, Summary: strings.TrimSpace(input.Summary), Description: *input.Description, Due: *input.Due, Status: input.Status,
+		})
+	}
 	if err != nil {
 		return nil, ItemOutput{}, err
 	}

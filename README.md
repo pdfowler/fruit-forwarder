@@ -19,6 +19,8 @@ Third-party attribution is recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTI
 Release history is tracked in [CHANGELOG.md](CHANGELOG.md).
 The release gate is tracked in [docs/acceptance-evidence.md](docs/acceptance-evidence.md).
 Mutation and recovery semantics are documented in [docs/command-lifecycle.md](docs/command-lifecycle.md).
+Reminder field support and update-preservation rules are documented in
+[docs/reminder-semantics.md](docs/reminder-semantics.md).
 Home Assistant's diagnostics download reports only redacted operational counts and timestamps; it excludes credentials and household contents.
 
 ## Security boundary
