@@ -34,10 +34,26 @@ with zipfile.ZipFile(artifact) as bundle:
 registry = json.load(open(metadata))
 if registry.get("version") != version:
     raise SystemExit("Registry metadata version does not match the candidate")
-package = registry.get("packages", [{}])[0]
+if registry.get("name") != "io.github.pdfowler/fruit-forwarder":
+    raise SystemExit("Registry metadata namespace is not the Fruit Forwarder namespace")
+packages = registry.get("packages")
+if not isinstance(packages, list) or len(packages) != 1:
+    raise SystemExit("Registry metadata must contain exactly one package")
+package = packages[0]
 if package.get("fileSha256") != checksum:
     raise SystemExit("Registry metadata hash does not match the candidate")
 if package.get("version") != version or package.get("registryType") != "mcpb":
     raise SystemExit("Registry metadata package is inconsistent")
+identifier = package.get("identifier", "")
+expected_identifier = (
+    f"https://github.com/pdfowler/fruit-forwarder/releases/download/v{version}/"
+    f"fruit-forwarder-mcp-{version}.mcpb"
+)
+if identifier != expected_identifier:
+    raise SystemExit("Registry metadata MCPB URL does not point to the versioned GitHub release")
+if "mcp" not in identifier.lower():
+    raise SystemExit("Registry metadata MCPB URL must contain 'mcp'")
+if package.get("transport", {}).get("type") != "stdio":
+    raise SystemExit("Registry metadata MCPB transport must be stdio")
 print("validated MCPB, checksum sidecar, and Registry metadata")
 PY
