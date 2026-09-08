@@ -167,6 +167,24 @@ background service health.
 - No service cutover, permission reset, Keychain rotation, or household-data
   mutation was performed.
 
+### Candidate rebuild refresh (2026-09-08 UTC)
+
+- `task release:prepare` passed from clean source revision
+  `49d4421f0cb062cad024b542bd4783ca21ca695f`, with complete-history
+  `pfowler@icloud.com` attribution, gitleaks, Go race/vet, 55 HA tests,
+  deterministic HACS export, macOS package validation, MCPB validation, and
+  release-manifest verification.
+- The candidate now serializes `serve`, `sync-once`, explicit recovery, queue
+  epoch reset, and per-operation MCP EventKit access through the same private
+  state lock. Synthetic coverage verifies that recovery and MCP access fail
+  closed while another bridge operation owns that lock.
+- MCP reminder and calendar result tools now expose bounded offset/limit
+  pagination (default and maximum 100 results per response), with a
+  `next_offset` continuation and total count.
+- This remains source/build and synthetic concurrency evidence. It does not
+  replace installed macOS permission/lifecycle, live HA, independent MCP
+  client, real-account semantic, or publication evidence.
+
 ## Installed acceptance record template
 
 Create one redacted record per run, for example under a maintainer-controlled
