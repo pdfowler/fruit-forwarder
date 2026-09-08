@@ -48,6 +48,46 @@ func Acquire(path string) (func(), error) {
 	}, nil
 }
 
+// Probe reports whether the advisory state lock is currently available without
+// creating the lock file or changing its contents. A busy lock is a normal
+// result while the bridge is serving; callers should treat it as a diagnostic
+// signal rather than as a failure by itself.
+func Probe(path string) (string, error) {
+	directory := filepath.Dir(path)
+	if err := validatePrivateDirectory(directory); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "available", nil
+		}
+		return "", fmt.Errorf("lock directory: %w", err)
+	}
+	fd, err := unix.Open(path, unix.O_RDWR|unix.O_CLOEXEC|unix.O_NOFOLLOW, 0)
+	if errors.Is(err, os.ErrNotExist) {
+		return "available", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("open state lock: %w", err)
+	}
+	file := os.NewFile(uintptr(fd), path)
+	if file == nil {
+		_ = unix.Close(fd)
+		return "", errors.New("open state lock: invalid file descriptor")
+	}
+	defer file.Close()
+	if err := validateExistingPath(path); err != nil {
+		return "", fmt.Errorf("state lock: %w", err)
+	}
+	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+		if errors.Is(err, syscall.EWOULDBLOCK) || errors.Is(err, syscall.EAGAIN) {
+			return "busy", nil
+		}
+		return "", fmt.Errorf("probe state lock: %w", err)
+	}
+	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_UN); err != nil {
+		return "", fmt.Errorf("release probed state lock: %w", err)
+	}
+	return "available", nil
+}
+
 const maxAppliedCommands = 1000
 const maxCommandIDLength = 256
 const maxQueueEpochLength = 128

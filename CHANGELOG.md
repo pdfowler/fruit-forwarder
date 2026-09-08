@@ -34,6 +34,8 @@ pre-release until the real macOS, Home Assistant, and MCP acceptance gates in
   bounded completion history, and intentionally unsupported Apple features.
 - Mark HA reminder and calendar entities stale/unavailable after ten minutes
   without a successful capability snapshot, while exposing snapshot age.
+- Add a read-only status/doctor probe for the bridge synchronization lock,
+  distinguishing an available lock from a normally busy running service.
 - Add guarded `task publish:release`, `task publish:hacs`, and `task publish:mcp`
   wrappers with exact-tag and attribution preflight.
 - Preserve signed macOS toolchain metadata when the final release job merges

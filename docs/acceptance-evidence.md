@@ -208,7 +208,16 @@ background service health.
   age; reminder and calendar freshness are tracked independently.
 - Synthetic HA coverage verifies stale reminder and calendar availability,
   diagnostics fields, and the local polling contract. This does not replace a
-  live HA outage/recovery run against the installed custom component.
+live HA outage/recovery run against the installed custom component.
+
+### Diagnostics lock-health candidate refresh (2026-09-08 UTC)
+
+- `status --json` and `doctor --json` now report `state_lock_status` without
+  creating or modifying the lock file. Synthetic coverage verifies available,
+  busy, and post-release states; a busy lock is treated as expected while a
+  bridge service is running.
+- This remains local diagnostics evidence. It does not replace a live
+  launchd/process lifecycle check on a signed macOS installation.
 
 ## Installed acceptance record template
 

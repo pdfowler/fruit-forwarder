@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -259,6 +260,49 @@ func TestReportStatusAcceptsReadyConfiguration(t *testing.T) {
 	}
 	if err := reportStatus(cfg, filepath.Join(dir, "config.json"), false, true); err != nil {
 		t.Fatalf("ready status returned an error: %v", err)
+	}
+}
+
+func TestReportStatusReportsBusyStateLock(t *testing.T) {
+	dir := t.TempDir()
+	helper := filepath.Join(dir, "eventkit-helper")
+	if err := os.WriteFile(helper, []byte("#!/bin/sh\nexit 0\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	statePath := filepath.Join(dir, "state.json")
+	release, err := state.Acquire(statePath + ".lock")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+
+	originalStdout := os.Stdout
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = writer
+	reportErr := reportStatus(&config.Config{
+		BridgeID:       "mac",
+		EventKitHelper: helper,
+		StatePath:      statePath,
+	}, filepath.Join(dir, "config.json"), false, true)
+	_ = writer.Close()
+	os.Stdout = originalStdout
+	output, readErr := io.ReadAll(reader)
+	_ = reader.Close()
+	if reportErr != nil {
+		t.Fatalf("busy status returned an error: %v", reportErr)
+	}
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	var report statusReport
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("decode status output %q: %v", output, err)
+	}
+	if report.StateLockStatus != "busy" {
+		t.Fatalf("state lock status = %q, want busy", report.StateLockStatus)
 	}
 }
 

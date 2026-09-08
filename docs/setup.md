@@ -69,6 +69,12 @@ sync is configured; neither command prints the token. Its JSON output reports
 `not_determined`, `denied`, or `restricted` result means that the installed
 helper's current macOS identity still needs permission; it is not evidence that
 the older helper identity was authorized.
+The same output includes `state_lock_status`: `available` means no bridge
+process currently owns the synchronization lock, while `busy` is expected when
+the background service or an interactive sync is running. `error` means the
+lock could not be inspected safely and should be investigated before changing
+the installation. The probe is read-only and does not create or modify the
+lock file.
 If a mutation reaches an ambiguous EventKit outcome, the bridge records the
 in-flight command and pauses further command application rather than blindly
 retrying it. Inspect the command ID with `doctor --json`, then choose an

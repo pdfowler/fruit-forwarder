@@ -136,3 +136,52 @@ func TestStateRejectsUntrustedFiles(t *testing.T) {
 		t.Fatal("symlinked state accepted")
 	}
 }
+
+func TestProbeDoesNotCreateAvailableLock(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "state.lock")
+	status, err := Probe(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status != "available" {
+		t.Fatalf("lock status = %q, want available", status)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("probe created lock file: %v", err)
+	}
+}
+
+func TestProbeReportsBusyLock(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "state.lock")
+	release, err := Acquire(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	status, err := Probe(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status != "busy" {
+		t.Fatalf("lock status = %q, want busy", status)
+	}
+}
+
+func TestProbeReportsAvailableAfterRelease(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "state.lock")
+	release, err := Acquire(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	release()
+	status, err := Probe(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status != "available" {
+		t.Fatalf("lock status = %q, want available", status)
+	}
+}

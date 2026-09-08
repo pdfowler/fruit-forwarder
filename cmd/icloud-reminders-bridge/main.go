@@ -146,6 +146,7 @@ type statusReport struct {
 	KeychainReady           *bool  `json:"keychain_ready,omitempty"`
 	StatePath               string `json:"state_path"`
 	StateReady              bool   `json:"state_ready"`
+	StateLockStatus         string `json:"state_lock_status"`
 	QueueEpoch              string `json:"queue_epoch,omitempty"`
 	InFlightCommandID       string `json:"in_flight_command_id,omitempty"`
 }
@@ -160,6 +161,7 @@ func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) 
 		EventKitReady:        reminderstore.ValidateHelperPath(cfg.EventKitPath()) == nil,
 		StatePath:            cfg.StatePath,
 		StateReady:           true,
+		StateLockStatus:      "unknown",
 	}
 	bridgeState, stateErr := state.Load(cfg.StatePath)
 	if stateErr != nil {
@@ -169,6 +171,11 @@ func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) 
 		if bridgeState.InFlight != nil {
 			report.InFlightCommandID = bridgeState.InFlight.ID
 		}
+	}
+	if lockStatus, lockErr := state.Probe(cfg.StatePath + ".lock"); lockErr != nil {
+		report.StateLockStatus = "error"
+	} else {
+		report.StateLockStatus = lockStatus
 	}
 	if deep && cfg.HomeAssistantURL != "" {
 		_, keychainErr := keychain.Load(cfg.KeychainService, cfg.KeychainAccount)
@@ -208,6 +215,7 @@ func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) 
 			fmt.Printf("  pairing Keychain item: %s\n", readiness(*report.KeychainReady))
 		}
 		fmt.Printf("  acknowledgement state: %s\n", readiness(report.StateReady))
+		fmt.Printf("  bridge state lock: %s\n", report.StateLockStatus)
 		if report.QueueEpoch != "" {
 			fmt.Printf("  Home Assistant queue epoch: %s\n", report.QueueEpoch)
 		}
@@ -232,6 +240,9 @@ func reportStatus(cfg *config.Config, configPath string, deep, jsonOutput bool) 
 	}
 	if !report.StateReady {
 		return errors.New("doctor: acknowledgement state is unreadable")
+	}
+	if deep && report.StateLockStatus == "error" {
+		return errors.New("doctor: bridge state lock cannot be probed safely")
 	}
 	if report.InFlightCommandID != "" {
 		return fmt.Errorf("doctor: command %s has an uncertain outcome; resolve it before syncing", report.InFlightCommandID)
