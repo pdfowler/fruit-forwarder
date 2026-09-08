@@ -46,3 +46,11 @@ def test_rollback_verifies_both_native_executables():
     helper = rollback.index('codesign --verify --strict "${STAGE_EVENTKIT}"')
     switch = rollback.index('mv "${STAGE_BRIDGE}" "${BRIDGE_BIN}"')
     assert bridge < helper < switch
+
+
+def test_uninstaller_rejects_symlinked_paths_before_removal():
+    uninstaller = (ROOT / "scripts/uninstall-macos.sh").read_text()
+    guard = uninstaller.index("reject_symlink_components")
+    removal = uninstaller.index('rm -f "${PLIST_PATH}"')
+    assert guard < removal
+    assert 'refusing to remove a symlinked uninstall target' in uninstaller
