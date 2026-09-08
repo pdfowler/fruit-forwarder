@@ -21,6 +21,16 @@ newer; CI runs both lanes. Webhook HTTP boundaries and synthetic entity
 lifecycle cases are covered locally; a complete installed-HA lifecycle remains
 separate release work.
 
+To run the current lane locally without replacing the baseline environment,
+use the isolated temporary target:
+
+```sh
+task test:ha-current
+```
+
+Set `PYTHON_CURRENT` when the Python 3.14 interpreter is not named
+`python3.14`. The target removes its temporary environment when it exits.
+
 Before opening a pull request on macOS, run:
 
 ```sh

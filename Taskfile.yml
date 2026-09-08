@@ -43,6 +43,21 @@ tasks:
       - test -x .venv/bin/python
       - .venv/bin/python -m pytest -q
 
+  test:ha-current:
+    desc: Run the current Home Assistant compatibility lane in an isolated temporary environment
+    cmds:
+      - |
+        python_bin="${PYTHON_CURRENT:-python3.14}"
+        command -v "${python_bin}" >/dev/null 2>&1 || {
+          echo "${python_bin} is required for the current Home Assistant lane" >&2
+          exit 2
+        }
+        temporary_dir="$(mktemp -d "${TMPDIR:-/tmp}/fruit-forwarder-ha-current.XXXXXX")"
+        trap 'rm -rf "${temporary_dir}"' EXIT
+        "${python_bin}" -m venv "${temporary_dir}/venv"
+        "${temporary_dir}/venv/bin/python" -m pip install --quiet -r requirements-test-current.txt
+        "${temporary_dir}/venv/bin/python" -m pytest -q
+
   test:
     deps: [test:go, test:ha]
     cmds:
