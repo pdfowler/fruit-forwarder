@@ -248,6 +248,12 @@ class BridgeRuntime:
             if list_id in seen_ids:
                 raise ProtocolError("Duplicate reminder list identifier")
             seen_ids.add(list_id)
+            source = raw_list.get("source", "")
+            read_only = raw_list.get("read_only", False)
+            if not isinstance(source, str) or len(source) > MAX_STRING_LENGTH:
+                raise ProtocolError("Reminder list source is invalid or too long")
+            if not isinstance(read_only, bool):
+                raise ProtocolError("Reminder list read_only must be boolean")
             raw_items = raw_list.get("items")
             if not isinstance(raw_items, list):
                 raise ProtocolError("Reminder list items must be an array")
@@ -259,8 +265,8 @@ class BridgeRuntime:
                 {
                     "id": list_id,
                     "name": name,
-                    "source": str(raw_list.get("source") or ""),
-                    "read_only": bool(raw_list.get("read_only", False)),
+                    "source": source,
+                    "read_only": read_only,
                     "items": items,
                 }
             )

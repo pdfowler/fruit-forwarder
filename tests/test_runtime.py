@@ -152,6 +152,20 @@ async def test_out_of_scope_snapshot_does_not_change_state(tmp_path):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("read_only", "false"), ("source", {"unexpected": True}), ("source", "x" * 4097)],
+)
+async def test_snapshot_rejects_untyped_or_oversized_list_metadata(tmp_path, field, value):
+    bridge = runtime(tmp_path)
+    invalid = snapshot()
+    invalid["lists"][0][field] = value
+    with pytest.raises(ProtocolError):
+        await bridge.async_process_snapshot(invalid)
+    assert bridge.lists == {}
+
+
+@pytest.mark.asyncio
 async def test_revoked_lists_and_commands_do_not_return_after_restart(tmp_path):
     bridge = runtime(tmp_path)
     await bridge.async_process_snapshot(snapshot())

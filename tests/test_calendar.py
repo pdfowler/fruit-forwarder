@@ -88,3 +88,19 @@ async def test_renamed_calendar_updates_friendly_name_without_changing_identity(
 
     assert entity.name == "Renamed Events"
     assert entity.unique_id == unique_id
+
+
+def test_calendar_validation_bounds_identifiers_and_text():
+    from custom_components.icloud_reminders_bridge.calendar_data import validate_calendars
+
+    base = calendar_payload()["calendars"][0]
+    for field, value in (("id", "x" * 4097), ("name", "x" * 4097)):
+        invalid = deepcopy(base)
+        invalid[field] = value
+        with pytest.raises(ValueError):
+            validate_calendars([invalid], {"events"})
+
+    invalid_event = deepcopy(base)
+    invalid_event["events"][0]["uid"] = "x" * 4097
+    with pytest.raises(ValueError):
+        validate_calendars([invalid_event], {"events"})
